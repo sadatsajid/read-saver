@@ -2,7 +2,7 @@
 
 Transform any article into actionable insights with AI-powered summarization and interactive Q&A.
 
-## 🚀 Features
+### 🚀 Features
 
 - **Instant Summaries**: Get TL;DR, key takeaways, and structured outlines in seconds
 - **Smart Q&A**: Ask questions about articles and get answers with citations
@@ -12,9 +12,9 @@ Transform any article into actionable insights with AI-powered summarization and
 - **Real-time Streaming**: See AI responses as they're generated
 - **Modern UI**: Beautiful, responsive interface built with Next.js 15 and Tailwind CSS
 
-## 🛠️ Tech Stack
+### 🛠️ Tech Stack
 
-### Frontend
+#### Frontend
 - **Next.js 15** (App Router)
 - **TypeScript** 5+
 - **Tailwind CSS** 4
@@ -22,27 +22,27 @@ Transform any article into actionable insights with AI-powered summarization and
 - **Vercel AI SDK** - Streaming chat interface
 - **React Markdown** - Render formatted responses
 
-### Backend
+#### Backend
 - **Next.js API Routes** - Serverless functions
 - **OpenAI API** - GPT-4o-mini + text-embedding-3-small
 - **Supabase** - Postgres + Auth + pgvector
 - **Prisma** - Type-safe database ORM
 
-### AI/RAG
+#### AI/RAG
 - **Custom RAG Pipeline** - Retrieval-Augmented Generation
 - **Vector Embeddings** - Semantic search with pgvector
 - **Content Extraction** - Jina Reader API + Mozilla Readability
 
-## 📋 Prerequisites
+### 📋 Prerequisites
 
 - Node.js 20+ and pnpm
 - Supabase account (free tier works)
 - OpenAI API key
 - (Optional) Jina AI API key for better extraction
 
-## 🏗️ Setup Instructions
+### 🏗️ Setup Instructions
 
-### 1. Clone and Install
+#### 1. Clone and Install
 
 \`\`\`bash
 git clone <your-repo>
@@ -50,7 +50,7 @@ cd article-iq
 pnpm install
 \`\`\`
 
-### 2. Set up Supabase
+#### 2. Set up Supabase
 
 1. Create a new project at [supabase.com](https://supabase.com)
 2. Go to **Project Settings > API** and copy:
@@ -67,7 +67,7 @@ create extension if not exists vector;
 -- This will be created automatically by Prisma migrations
 \`\`\`
 
-### 3. Configure Environment Variables
+#### 3. Configure Environment Variables
 
 Create \`.env.local\`:
 
@@ -90,7 +90,7 @@ JINA_API_KEY=your_jina_api_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 \`\`\`
 
-### 4. Set up Database
+#### 4. Set up Database
 
 \`\`\`bash
 # Generate Prisma client
@@ -100,7 +100,7 @@ pnpm db:generate
 pnpm db:push
 \`\`\`
 
-### 5. Create pgvector search function
+#### 5. Create pgvector search function
 
 Go back to Supabase SQL Editor and run:
 
@@ -139,7 +139,7 @@ create index if not exists chunks_embedding_idx
   with (lists = 100);
 \`\`\`
 
-### 6. Run Development Server
+#### 6. Run Development Server
 
 \`\`\`bash
 pnpm dev
@@ -147,7 +147,7 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) 🎉
 
-## 📖 Usage
+### 📖 Usage
 
 1. **Paste Article URL**: Enter any article URL on the homepage
 2. **Wait for Processing**: The app will extract, chunk, embed, and summarize the content
@@ -155,7 +155,7 @@ Open [http://localhost:3000](http://localhost:3000) 🎉
 4. **Ask Questions**: Chat with the article to dive deeper
 5. **Save & Organize**: Signed-in users can access their article history
 
-## 🗂️ Project Structure
+### 🗂️ Project Structure
 
 \`\`\`
 article-iq/
@@ -186,7 +186,7 @@ article-iq/
 └── package.json
 \`\`\`
 
-## 🧪 Testing
+### 🧪 Testing
 
 Try these test articles:
 
@@ -194,9 +194,9 @@ Try these test articles:
 - **News Article**: https://news.example.com/article
 - **Research Paper**: https://arxiv.org/abs/xxxx.xxxxx
 
-## 🚢 Deployment
+### 🚢 Deployment
 
-### Deploy to Vercel
+#### Deploy to Vercel
 
 1. Push code to GitHub
 2. Import project in [Vercel](https://vercel.com)
@@ -209,13 +209,13 @@ pnpm install -g vercel
 vercel
 \`\`\`
 
-### Environment Variables for Production
+#### Environment Variables for Production
 
 Make sure to set all variables from \`.env.local\` in your Vercel project settings.
 
-## 💰 Cost Estimates
+### 💰 Cost Estimates
 
-### With 1000 articles/month + 5000 questions:
+#### With 1000 articles/month + 5000 questions:
 
 - **Vercel**: $0-20/month (Hobby tier is free, Pro is $20)
 - **Supabase**: $0-25/month (Free tier → Pro if needed)
@@ -224,32 +224,32 @@ Make sure to set all variables from \`.env.local\` in your Vercel project settin
   - GPT-4o-mini: ~$0.15/1M input tokens
 - **Total**: ~$100-195/month
 
-## 🔒 Security Notes
+### 🔒 Security Notes
 
 - API keys stored in environment variables
 - Magic link authentication (no passwords stored)
 - Supabase handles auth security
 - Rate limiting recommended for production
 
-## 🐛 Troubleshooting
+### 🐛 Troubleshooting
 
-### Prisma errors
+#### Prisma errors
 \`\`\`bash
 pnpm db:generate
 pnpm db:push
 \`\`\`
 
-### pgvector not found
+#### pgvector not found
 Run the pgvector setup SQL in Supabase SQL Editor
 
-### OpenAI rate limits
+#### OpenAI rate limits
 Add delays between requests or upgrade to higher tier
 
-## 📝 License
+### 📝 License
 
 MIT
 
-## 🙏 Credits
+### 🙏 Credits
 
 Built with:
 - [Next.js](https://nextjs.org/)
@@ -258,7 +258,7 @@ Built with:
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Vercel AI SDK](https://sdk.vercel.ai/)
 
-## 🤝 Contributing
+### 🤝 Contributing
 
 Contributions welcome! Please open an issue or PR.
 
