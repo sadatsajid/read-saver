@@ -23,7 +23,21 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const userId = user?.id || requestUserId;
+    
+    // 2a. Ensure user exists in local database (sync Supabase Auth -> Prisma)
+    const userId: string | undefined = user?.id || requestUserId;
+    
+    if (userId && user?.email) {
+      // Upsert user to ensure they exist in local database
+      await prisma.user.upsert({
+        where: { id: userId },
+        update: { email: user.email },
+        create: {
+          id: userId,
+          email: user.email,
+        },
+      });
+    }
 
     // 3. Check if article already exists
     const existing = await prisma.article.findFirst({
@@ -36,6 +50,35 @@ export async function POST(request: NextRequest) {
         outline: true,
       },
     });
+
+    // 4. Track user-article relationship if user is authenticated and article exists
+    if (userId && existing) {
+      try {
+        // Attempt to create relationship (will fail silently if already exists)
+        await prisma.userArticle.create({
+          data: {
+            userId,
+            articleId: existing.id,
+          },
+        });
+      } catch (relationError: unknown) {
+        // Ignore unique constraint errors (relationship already exists)
+        if (
+          relationError instanceof Error &&
+          'code' in relationError &&
+          relationError.code !== 'P2002'
+        ) {
+          console.error('Error creating user-article relationship:', relationError);
+        }
+      }
+
+      return NextResponse.json({
+        articleId: existing.id,
+        title: existing.title,
+        summary: JSON.parse(existing.summary),
+        cached: true,
+      });
+    }
 
     if (existing) {
       return NextResponse.json({
@@ -77,7 +120,7 @@ export async function POST(request: NextRequest) {
         summary: JSON.stringify(summary),
         takeaways: summary.takeaways,
         outline: summary.outline,
-        userId,
+        userId: userId || null,
       },
       select: {
         id: true,
@@ -143,6 +186,28 @@ export async function POST(request: NextRequest) {
     console.log(
       `Article processed successfully: ${savedArticle.id} (${processedChunks} chunks)`
     );
+
+    // 9. Track user-article relationship if user is authenticated
+    if (userId) {
+      try {
+        await prisma.userArticle.create({
+          data: {
+            userId,
+            articleId: savedArticle.id,
+          },
+        });
+        console.log(`User-article relationship created: ${userId} -> ${savedArticle.id}`);
+      } catch (relationError: unknown) {
+        // Ignore unique constraint errors (relationship already exists)
+        if (
+          relationError instanceof Error &&
+          'code' in relationError &&
+          relationError.code !== 'P2002'
+        ) {
+          console.error('Error creating user-article relationship:', relationError);
+        }
+      }
+    }
 
     return NextResponse.json({
       articleId: savedArticle.id,

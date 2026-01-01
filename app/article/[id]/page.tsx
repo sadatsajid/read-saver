@@ -1,8 +1,12 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
+import { createClient } from '@/lib/supabase/server';
 import { SummaryDisplay } from '@/components/summary-display';
 import { ChatInterface } from '@/components/chat-interface';
-import { ExternalLink, Calendar } from 'lucide-react';
+import { DeleteArticleButton } from '@/components/delete-article-button';
+import { Button } from '@/components/ui/button';
+import { ExternalLink, Calendar, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface PageProps {
   params: Promise<{
@@ -13,6 +17,13 @@ interface PageProps {
 export default async function ArticlePage({ params }: PageProps) {
   const { id } = await params;
 
+  // Check authentication
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Get article with ownership check
   const article = await prisma.article.findUnique({
     where: { id },
     select: {
@@ -21,12 +32,22 @@ export default async function ArticlePage({ params }: PageProps) {
       url: true,
       summary: true,
       createdAt: true,
+      userId: true,
     },
   });
 
   if (!article) {
     notFound();
   }
+
+  // Enforce ownership: only the owner can view their articles
+  if (article.userId && article.userId !== user?.id) {
+    redirect('/dashboard');
+  }
+
+  // For articles without userId (legacy/anonymous), allow public access
+  // but encourage login for saving
+  const isOwner = user && article.userId === user.id;
 
   let summary;
   try {
@@ -40,19 +61,39 @@ export default async function ArticlePage({ params }: PageProps) {
       <div className="container mx-auto px-4 py-6 max-w-[1600px]">
         {/* Article Header */}
         <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-3 mb-4">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="icon" className="hover:bg-primary/5">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Back to Dashboard</span>
+            </div>
+          </div>
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-3xl md:text-4xl font-bold leading-tight flex-1">
               {article.title}
             </h1>
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/50 bg-card/50 hover:bg-card hover:border-primary/20 transition-all hover:scale-105 shrink-0"
-            >
-              <ExternalLink className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Original</span>
-            </a>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/50 bg-card/50 hover:bg-card hover:border-primary/20 transition-all hover:scale-105"
+              >
+                <ExternalLink className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Original</span>
+              </a>
+              {isOwner && (
+                <DeleteArticleButton
+                  articleId={article.id}
+                  articleTitle={article.title}
+                  variant="outline"
+                  size="default"
+                />
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
