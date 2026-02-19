@@ -21,7 +21,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Check authentication
+    // 1. Check authentication
     const supabase = await createClient();
     const {
       data: { user },
@@ -31,17 +31,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if article exists
+    // 2. Check if article exists
     const article = await prisma.article.findUnique({
       where: { id },
       select: { id: true },
     });
 
     if (!article) {
-      return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Article not found' },
+        { status: 404 }
+      );
     }
 
-    // Check if user has this article in their collection
+    // 3. Check if user has this article in their collection
     const userArticle = await prisma.userArticle.findUnique({
       where: {
         userId_articleId: {
@@ -58,7 +61,7 @@ export async function DELETE(
       );
     }
 
-    // Delete the user-article relationship (article remains for other users)
+    // 4. Delete the user-article relationship (article remains for other users)
     await prisma.userArticle.delete({
       where: {
         userId_articleId: {
@@ -68,17 +71,29 @@ export async function DELETE(
       },
     });
 
-    // Optional: If article has no more user relationships and no userId, consider deleting it
-    // For now, we'll keep articles even if no users reference them (for caching)
+    console.log(
+      `[Articles] Article removed from collection: ${user.id} -> ${id}`
+    );
 
     return NextResponse.json({
       message: 'Article removed from your collection',
       articleId: id,
     });
   } catch (error) {
-    console.error('Delete article error:', error);
+    console.error('[Articles] Delete error:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: 'Failed to remove article',
+          message: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to remove article' },
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     );
   }
@@ -87,17 +102,19 @@ export async function DELETE(
 /**
  * GET /api/articles/[id]
  * Get article details
- * Public for now, but checks ownership for additional metadata
+ * Public access, but checks ownership for additional metadata
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
+    // 1. Get authenticated user (if any)
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
+    // 2. Fetch article from database
     const article = await prisma.article.findUnique({
       where: { id },
       select: {
@@ -113,22 +130,51 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!article) {
-      return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Article not found' },
+        { status: 404 }
+      );
     }
 
-    // Check if user is the owner
+    // 3. Parse summary JSON (stored as string in database)
+    let parsedSummary;
+    try {
+      parsedSummary = JSON.parse(article.summary);
+    } catch {
+      // Fallback if summary is invalid JSON
+      parsedSummary = { tldr: [], takeaways: [], outline: [] };
+    }
+
+    // 4. Check if user is the owner
     const isOwner = user && article.userId === user.id;
 
+    // 5. Return article with parsed summary
     return NextResponse.json({
-      ...article,
+      id: article.id,
+      title: article.title,
+      url: article.url,
+      summary: parsedSummary,
+      takeaways: article.takeaways,
+      outline: article.outline,
+      createdAt: article.createdAt,
       isOwner,
     });
   } catch (error) {
-    console.error('Get article error:', error);
+    console.error('[Articles] Get error:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: 'Failed to get article',
+          message: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to get article' },
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     );
   }
 }
-

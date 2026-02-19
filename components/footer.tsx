@@ -6,12 +6,12 @@ import { Github, Twitter, Mail } from 'lucide-react';
 export function Footer() {
   return (
     <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm mt-auto">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Brand Column */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold">
-              Article<span className="text-primary">IQ</span>
+            <h3 className="text-xl sm:text-2xl font-bold">
+              Read<span className="text-primary">Saver</span>
             </h3>
             <p className="text-sm text-muted-foreground">
               Transform articles into actionable insights with AI-powered summarization and interactive Q&A.
@@ -36,7 +36,7 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a 
-                href="mailto:support@articleiq.com" 
+                href="mailto:support@readsaver.ai" 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Email"
               >
@@ -47,8 +47,8 @@ export function Footer() {
 
           {/* Product Column */}
           <div>
-            <h4 className="font-semibold mb-4">Product</h4>
-            <ul className="space-y-3 text-sm">
+            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Product</h4>
+            <ul className="space-y-2 sm:space-y-3 text-sm">
               <li>
                 <Link href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
                   Dashboard
@@ -74,8 +74,8 @@ export function Footer() {
 
           {/* Resources Column */}
           <div>
-            <h4 className="font-semibold mb-4">Resources</h4>
-            <ul className="space-y-3 text-sm">
+            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Resources</h4>
+            <ul className="space-y-2 sm:space-y-3 text-sm">
               <li>
                 <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                   Documentation
@@ -101,8 +101,8 @@ export function Footer() {
 
           {/* Legal Column */}
           <div>
-            <h4 className="font-semibold mb-4">Legal</h4>
-            <ul className="space-y-3 text-sm">
+            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Legal</h4>
+            <ul className="space-y-2 sm:space-y-3 text-sm">
               <li>
                 <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                   Privacy Policy
@@ -128,11 +128,11 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ArticleIQ. All rights reserved.
+        <div className="pt-6 sm:pt-8 border-t border-border/50 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-center sm:text-left">
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            © {new Date().getFullYear()} ReadSaver. All rights reserved.
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Built with ❤️
           </p>
         </div>
@@ -140,4 +140,3 @@ export function Footer() {
     </footer>
   );
 }
-

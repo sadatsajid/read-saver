@@ -2,7 +2,7 @@
 
 ## 🔐 Authentication Method
 
-ArticleIQ uses **password-based authentication** with optional email verification:
+ReadSaver uses **password-based authentication** with optional email verification:
 
 ### **Password Authentication**
 - Traditional email + password login

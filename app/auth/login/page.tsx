@@ -136,7 +136,7 @@ export default function LoginPage() {
                             error?.toLowerCase().includes('verification link');
 
   return (
-    <div className="min-h-screen gradient-mesh flex items-center justify-center px-4 py-12">
+    <div className="min-h-full gradient-mesh flex items-center justify-center px-4 py-12 -m-6">
       <div className="w-full max-w-md space-y-6 animate-slide-up">
         {/* Header Section */}
         <div className="text-center space-y-3">
@@ -149,7 +149,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground text-base">
             {authMode === 'signup'
               ? 'Create your account to start analyzing articles'
-              : 'Sign in to your ArticleIQ account'}
+              : 'Sign in to your ReadSaver account'}
           </p>
         </div>
 
@@ -367,7 +367,7 @@ export default function LoginPage() {
         {/* Additional Info */}
         <div className="text-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            New to ArticleIQ?{' '}
+            New to ReadSaver?{' '}
             <Link href="/" className="text-primary font-medium hover:underline">
               Explore features
             </Link>

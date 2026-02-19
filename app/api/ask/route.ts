@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { openai, CHAT_MODEL } from '@/lib/openai';
 import {
@@ -7,6 +7,8 @@ import {
   isQuestionAnswerable,
 } from '@/lib/rag';
 import { prisma } from '@/lib/db';
+import { RAG_CONFIG } from '@/lib/rag-config';
+import { getQASystemPrompt, getUserPrompt } from '@/lib/prompts';
 
 // Support both useChat format (messages array) and legacy format (question field)
 const AskRequestSchema = z.object({
@@ -25,28 +27,23 @@ const AskRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Parse and validate request
+    // 1. Parse and validate request (public route – no auth required)
     const body = await request.json();
     const parsed = AskRequestSchema.parse(body);
     const { articleId } = parsed;
 
-    // Extract question from useChat format (messages array) or legacy format
+    // 2. Extract and validate question from useChat format (messages array) or legacy format
     let question: string;
     if (parsed.messages && parsed.messages.length > 0) {
-      // useChat format: get the last user message
-      const lastUserMessage = parsed.messages
-        .filter((m) => m.role === 'user')
-        .pop();
-      if (!lastUserMessage || !lastUserMessage.content.trim()) {
-        return new Response(
-          JSON.stringify({
+      // useChat format: get the last user message (optimized with findLast)
+      const lastUserMessage = parsed.messages.findLast((m) => m.role === 'user');
+      if (!lastUserMessage?.content?.trim()) {
+        return NextResponse.json(
+          {
             error: 'Invalid request',
             details: [{ message: 'No user message found in messages array' }],
-          }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          }
+          },
+          { status: 400 }
         );
       }
       question = lastUserMessage.content.trim();
@@ -54,8 +51,8 @@ export async function POST(request: NextRequest) {
       // Legacy format
       question = parsed.question.trim();
     } else {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: 'Invalid request',
           details: [
             {
@@ -63,108 +60,106 @@ export async function POST(request: NextRequest) {
                 'Either "messages" array or "question" field is required',
             },
           ],
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
+        },
+        { status: 400 }
       );
     }
 
-    // 2. Verify article exists
+    // 3. Validate question length
+    if (question.length < RAG_CONFIG.MIN_QUESTION_LENGTH) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request',
+          details: [
+            {
+              message: `Question must be at least ${RAG_CONFIG.MIN_QUESTION_LENGTH} characters long`,
+            },
+          ],
+        },
+        { status: 400 }
+      );
+    }
+
+    if (question.length > RAG_CONFIG.MAX_QUESTION_LENGTH) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request',
+          details: [
+            {
+              message: `Question must be no more than ${RAG_CONFIG.MAX_QUESTION_LENGTH} characters long`,
+            },
+          ],
+        },
+        { status: 400 }
+      );
+    }
+
+    // 4. Verify article exists
     const article = await prisma.article.findUnique({
       where: { id: articleId },
       select: { id: true, title: true },
     });
 
     if (!article) {
-      return new Response(
-        JSON.stringify({
-          error: 'Article not found',
-        }),
-        {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' },
-        }
+      return NextResponse.json(
+        { error: 'Article not found' },
+        { status: 404 }
       );
     }
 
-    // 3. Retrieve relevant chunks using vector similarity
-    console.log('Retrieving relevant chunks for question:', question);
-    const chunks = await retrieveRelevantChunks(articleId, question, 5, 0.6);
+    // 5. Retrieve relevant chunks using vector similarity
+    console.log('[Q&A] Retrieving relevant chunks for question:', question);
+    const chunks = await retrieveRelevantChunks(
+      articleId,
+      question,
+      RAG_CONFIG.TOP_K,
+      RAG_CONFIG.MIN_SIMILARITY
+    );
 
-    console.log(`Found ${chunks.length} relevant chunks`);
+    console.log(`[Q&A] Found ${chunks.length} relevant chunks`);
 
-    // 4. Check if we have enough context to answer
+    // 8. Check if we have enough context to answer
     if (chunks.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: 'No relevant information found in the article.',
-          suggestion: 'Try rephrasing your question or asking about a different topic.',
-        }),
+      return NextResponse.json(
         {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' },
-        }
+          error: 'No relevant information found in the article.',
+          suggestion:
+            'Try rephrasing your question or asking about a different topic.',
+        },
+        { status: 404 }
       );
     }
 
-    // Filter out chunks that are too short (likely just metadata)
-    const meaningfulChunks = chunks.filter(chunk => chunk.content.trim().length > 50);
-    if (meaningfulChunks.length === 0) {
-      console.warn('All retrieved chunks are too short, using all chunks anyway');
-    }
-    const chunksToUse = meaningfulChunks.length > 0 ? meaningfulChunks : chunks;
+    // 6. Filter out chunks that are too short (likely just metadata)
+    const meaningfulChunks = chunks.filter(
+      (chunk) => chunk.content.trim().length >= RAG_CONFIG.MIN_CHUNK_LENGTH
+    );
+    const chunksToUse =
+      meaningfulChunks.length > 0 ? meaningfulChunks : chunks;
 
-    // 5. Format context for LLM
+    if (meaningfulChunks.length === 0) {
+      console.warn(
+        '[Q&A] All retrieved chunks are too short, using all chunks anyway'
+      );
+    }
+
+    // 7. Format context for LLM
     const context = formatContextForLLM(chunksToUse);
-    const answerable = isQuestionAnswerable(chunksToUse, 0.7);
+    const answerable = isQuestionAnswerable(
+      chunksToUse,
+      RAG_CONFIG.ANSWERABLE_THRESHOLD
+    );
 
     // Log for debugging
-    console.log(`Using ${chunksToUse.length} chunks (${chunks.length} total retrieved), context length: ${context.length} chars`);
+    console.log(
+      `[Q&A] Using ${chunksToUse.length} chunks (${chunks.length} total retrieved), context length: ${context.length} chars`
+    );
 
-    // 6. Prepare system prompt
-    const systemPrompt = `You are an AI assistant specialized in analyzing and answering questions about specific articles with high accuracy and transparency.
+    // 8. Prepare prompts
+    const systemPrompt = getQASystemPrompt(article.title, context, answerable);
+    const userPrompt = getUserPrompt(question);
 
-**Your Task:** Answer the user's question based exclusively on the provided article context, following strict sourcing and accuracy guidelines.
-
-**Critical Requirements:**
-
-1. **Source Restriction:** Base your answer ONLY on the provided context chunks. Do not incorporate any external knowledge, assumptions, or information not explicitly stated in the context.
-
-2. **Citation Protocol:** 
-   - Cite every factual claim using the provided citation markers [1], [2], [3], etc.
-   - Place citations immediately after the relevant information
-   - Use multiple citations when information spans multiple sources
-
-3. **Transparency Standards:**
-   - If the context lacks sufficient information to answer the question, respond with: "I don't have enough information in the provided article context to answer that question."
-   - When information is partial or ambiguous, explicitly state: "Based on the available context, [your answer], though the information is [incomplete/unclear/limited]."
-   - If you're uncertain about any aspect, acknowledge it clearly
-
-4. **Response Format:**
-   - Use markdown formatting for enhanced readability
-   - Structure your answer with clear paragraphs or bullet points when appropriate
-   - Lead with the most direct answer to the user's question
-   - Keep responses concise while being thorough
-
-5. **Quality Checks:**
-   - Verify that every factual statement has proper citation
-   - Ensure you haven't added interpretations beyond what's explicitly stated
-   - Confirm your answer directly addresses the user's specific question
-
-**Article Context from "${article.title}":**
-${context}
-
-${answerable ? '' : '⚠️ **Context Limitation Notice:** The retrieved context may not fully address this question. Exercise extra caution and clearly indicate any limitations in your response.'}
-
-**User Question:** [The user's question will appear here]`;
-
-    const userPrompt = `Question: ${question}
-
-Please provide a clear, cited answer based on the article context above.`;
-
-    // 7. Create streaming response from OpenAI
+    // 9. Create streaming response from OpenAI
     const response = await openai.chat.completions.create({
       model: CHAT_MODEL,
       stream: true,
@@ -178,12 +173,12 @@ Please provide a clear, cited answer based on the article context above.`;
           content: userPrompt,
         },
       ],
-      temperature: 1, // gpt-5 only supports temperature: 1
-      max_completion_tokens: 4000,
+      temperature: RAG_CONFIG.TEMPERATURE,
+      max_completion_tokens: RAG_CONFIG.MAX_COMPLETION_TOKENS,
     });
 
-    // 8. Convert OpenAI stream to AI SDK data stream format for useChat
-    // Format: 0:"escaped text"\n for text chunks, d:"[DONE]"\n for completion
+    // 10. Convert OpenAI stream to AI SDK data stream format for useChat
+    // Format: 0:"text"\n for text, e:{...}\n for finish_step, d:{...}\n for finish_message
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -192,17 +187,19 @@ Please provide a clear, cited answer based on the article context above.`;
             const text = chunk.choices[0]?.delta?.content || '';
             if (text) {
               // AI SDK data stream format: 0:"JSON-escaped text"\n
-              // Use JSON.stringify to properly escape the text
               const escaped = JSON.stringify(text);
               const data = `0:${escaped}\n`;
               controller.enqueue(encoder.encode(data));
             }
           }
-          // Signal completion
-          controller.enqueue(encoder.encode('d:"[DONE]"\n'));
+          // Signal step completion then message completion
+          const finishStep = `e:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 }, isContinued: false })}\n`;
+          const finishMessage = `d:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 } })}\n`;
+          controller.enqueue(encoder.encode(finishStep));
+          controller.enqueue(encoder.encode(finishMessage));
           controller.close();
         } catch (error) {
-          console.error('Streaming error:', error);
+          console.error('[Q&A] Streaming error:', error);
           controller.error(error);
         }
       },
@@ -215,46 +212,36 @@ Please provide a clear, cited answer based on the article context above.`;
       },
     });
   } catch (error) {
-    console.error('Q&A error:', error);
+    console.error('[Q&A] Error:', error);
 
     if (error instanceof z.ZodError) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: 'Invalid request',
           details: error.issues,
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
+        },
+        { status: 400 }
       );
     }
 
     if (error instanceof Error) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: 'Failed to answer question',
           message: error.message,
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        }
+        },
+        { status: 500 }
       );
     }
 
-    return new Response(
-      JSON.stringify({
-        error: 'An unexpected error occurred',
-      }),
+    return NextResponse.json(
       {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
+        error: 'An unexpected error occurred',
+      },
+      { status: 500 }
     );
   }
 }
 
 // Standard timeout for Q&A (usually completes in <10s)
 export const maxDuration = 30;
-

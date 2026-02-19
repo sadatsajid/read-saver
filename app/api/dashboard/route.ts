@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { DASHBOARD_CONFIG } from '@/lib/dashboard-config';
 
 /**
  * GET /api/dashboard
@@ -8,7 +9,7 @@ import { NextResponse } from 'next/server';
  */
 export async function GET() {
   try {
-    // Check authentication
+    // 1. Check authentication
     const supabase = await createClient();
     const {
       data: { user },
@@ -18,7 +19,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Ensure user exists in local database (sync Supabase Auth -> Prisma)
+    // 2. Ensure user exists in local database (sync Supabase Auth -> Prisma)
     await prisma.user.upsert({
       where: { id: user.id },
       update: { email: user.email! },
@@ -28,7 +29,7 @@ export async function GET() {
       },
     });
 
-    // Get user's articles through UserArticle relationship
+    // 3. Get user's articles through UserArticle relationship
     const userArticles = await prisma.userArticle.findMany({
       where: { userId: user.id },
       include: {
@@ -43,23 +44,24 @@ export async function GET() {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: DASHBOARD_CONFIG.ARTICLES_PER_PAGE,
     });
 
-    // Calculate statistics
-    const articles = userArticles.map((ua: typeof userArticles[0]) => ua.article);
+    // 4. Calculate statistics
+    const articles = userArticles.map((ua) => ua.article);
     const totalInsights = articles.reduce(
-      (sum: number, a: typeof articles[0]) => sum + a.takeaways.length,
+      (sum, article) => sum + article.takeaways.length,
       0
     );
     const avgInsights =
       articles.length > 0 ? Math.round(totalInsights / articles.length) : 0;
 
-    // Get total count (for pagination)
+    // 5. Get total count (for pagination)
     const totalCount = await prisma.userArticle.count({
       where: { userId: user.id },
     });
 
+    // 6. Format response
     return NextResponse.json({
       stats: {
         articlesAnalyzed: articles.length,
@@ -67,7 +69,7 @@ export async function GET() {
         avgInsightsPerArticle: avgInsights,
         totalCount,
       },
-      articles: articles.map((article: typeof articles[0]) => ({
+      articles: articles.map((article) => ({
         id: article.id,
         title: article.title,
         url: article.url,
@@ -76,11 +78,21 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    console.error('Dashboard API error:', error);
+    console.error('[Dashboard] Error:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: 'Failed to fetch dashboard data',
+          message: error.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     );
   }
 }
-

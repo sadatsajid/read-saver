@@ -220,18 +220,18 @@ export default function DashboardPage() {
                     .map((article) => (
                       <div
                         key={article.id}
-                        className="p-4 hover:bg-muted/30 transition-colors"
+                        className="p-4 sm:p-6 hover:bg-muted/30 transition-colors"
                       >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                           {/* Left Column: Title and Metadata */}
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-base font-semibold mb-2 line-clamp-2">
+                            <h3 className="text-base font-semibold mb-2 line-clamp-2 break-words">
                               {article.title}
                             </h3>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                <span>
+                                <Calendar className="h-3.5 w-3.5 shrink-0" />
+                                <span className="whitespace-nowrap">
                                   {new Date(article.createdAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -240,15 +240,15 @@ export default function DashboardPage() {
                                 </span>
                               </div>
                               <Badge variant="secondary" className="gap-1.5 text-xs">
-                                <Lightbulb className="h-3 w-3" />
+                                <Lightbulb className="h-3 w-3 shrink-0" />
                                 {article.insightsCount} {article.insightsCount === 1 ? 'insight' : 'insights'}
                               </Badge>
                             </div>
                           </div>
                           {/* Right Column: Action Buttons */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Link href={`/article/${article.id}`}>
-                              <Button variant="default" size="sm">
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                            <Link href={`/article/${article.id}`} className="flex-1 sm:flex-initial">
+                              <Button variant="default" size="sm" className="w-full sm:w-auto">
                                 View Summary
                               </Button>
                             </Link>
@@ -275,13 +275,13 @@ export default function DashboardPage() {
 
                 {/* Pagination Controls */}
                 {data.articles.length > itemsPerPage && (
-                  <div className="flex items-center justify-between px-4 py-4 border-t border-border/50">
-                    <div className="text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t border-border/50">
+                    <div className="text-sm text-muted-foreground text-center sm:text-left">
                       Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
                       {Math.min(currentPage * itemsPerPage, data.articles.length)} of{' '}
                       {data.articles.length} articles
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
                       <Button
                         variant="outline"
                         size="sm"
@@ -290,7 +290,7 @@ export default function DashboardPage() {
                         className="gap-1"
                       >
                         <ChevronLeft className="h-4 w-4" />
-                        Previous
+                        <span className="hidden sm:inline">Previous</span>
                       </Button>
                       <div className="flex items-center gap-1">
                         {Array.from(
@@ -306,13 +306,13 @@ export default function DashboardPage() {
                           .map((page, idx, arr) => (
                             <div key={page} className="flex items-center gap-1">
                               {idx > 0 && arr[idx - 1] !== page - 1 && (
-                                <span className="px-2 text-muted-foreground">...</span>
+                                <span className="px-1 sm:px-2 text-muted-foreground">...</span>
                               )}
                               <Button
                                 variant={currentPage === page ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setCurrentPage(page)}
-                                className="min-w-10"
+                                className="min-w-8 sm:min-w-10"
                               >
                                 {page}
                               </Button>
@@ -330,7 +330,7 @@ export default function DashboardPage() {
                         disabled={currentPage >= Math.ceil(data.articles.length / itemsPerPage)}
                         className="gap-1"
                       >
-                        Next
+                        <span className="hidden sm:inline">Next</span>
                         <ChevronRight className="h-4 w-4" />
                       </Button>
                     </div>

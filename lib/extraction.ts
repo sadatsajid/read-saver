@@ -98,7 +98,7 @@ async function extractWithReadability(
   const response = await fetch(url, {
     headers: {
       'User-Agent':
-        'Mozilla/5.0 (compatible; ArticleIQ/1.0; +https://article-iq.com)',
+        'Mozilla/5.0 (compatible; ReadSaver/1.0; +https://readsaver.ai)',
     },
     signal: AbortSignal.timeout(30000), // 30s timeout
   });

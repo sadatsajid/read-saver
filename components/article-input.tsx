@@ -48,21 +48,21 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
 
   return (
     <div className="w-full space-y-4">
-      <form onSubmit={handleSubmit} className="flex gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
         <Input
           type="url"
           placeholder="Paste article URL here... (e.g., https://example.com/article)"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           disabled={loading}
-          className="flex-1 h-12 text-base border-2 focus:border-primary/50 transition-colors"
+          className="flex-1 h-12 sm:h-12 text-base border-2 focus:border-primary/50 transition-colors"
           required
         />
         <Button 
           type="submit" 
           disabled={loading || !url}
           size="lg"
-          className="h-12 px-8 text-base font-semibold"
+          className="h-12 px-6 sm:px-8 text-base font-semibold w-full sm:w-auto whitespace-nowrap"
         >
           {loading ? (
             <>
@@ -77,12 +77,12 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
 
       {error && (
         <Alert variant="destructive" className="animate-slide-up">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <AlertDescription className="break-words">{error}</AlertDescription>
         </Alert>
       )}
 
-      <p className="text-sm text-muted-foreground text-center">
+      <p className="text-xs sm:text-sm text-muted-foreground text-center px-2">
         Works with any article URL from the web • No signup required
       </p>
     </div>

@@ -1,4 +1,4 @@
-# 🎉 ArticleIQ - Project Complete!
+# 🎉 ReadSaver - Project Complete!
 
 ## ✅ What's Been Built
 
@@ -44,7 +44,7 @@
 
 ### File Structure
 ```
-article-iq/
+readsaver/
 ├── app/
 │   ├── api/
 │   │   ├── ingest/route.ts         ✅ Article processing

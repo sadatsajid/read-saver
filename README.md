@@ -1,4 +1,4 @@
-# ArticleIQ - AI-Powered Article Summarizer + Q&A
+# ReadSaver - AI-Powered Article Summarizer + Q&A
 
 Transform any article into actionable insights with AI-powered summarization and interactive Q&A.
 
@@ -46,7 +46,7 @@ Transform any article into actionable insights with AI-powered summarization and
 
 \`\`\`bash
 git clone <your-repo>
-cd article-iq
+cd readsaver
 pnpm install
 \`\`\`
 
@@ -158,7 +158,7 @@ Open [http://localhost:3000](http://localhost:3000) 🎉
 ### 🗂️ Project Structure
 
 \`\`\`
-article-iq/
+readsaver/
 ├── app/
 │   ├── api/
 │   │   ├── ingest/          # Article processing endpoint

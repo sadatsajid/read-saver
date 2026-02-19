@@ -158,7 +158,7 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return {
-    title: `${article.title} - ArticleIQ`,
+    title: `${article.title} - ReadSaver`,
     description: `AI-generated summary and insights for: ${article.title}`,
   };
 }

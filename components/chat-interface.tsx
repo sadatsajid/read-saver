@@ -14,7 +14,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ articleId }: ChatInterfaceProps) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, error, reload } =
     useChat({
@@ -30,13 +30,16 @@ export function ChatInterface({ articleId }: ChatInterfaceProps) {
       },
     });
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom of the messages container only (never the page)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   return (
-    <Card className="w-full h-full flex flex-col border-border/50 bg-card/80 backdrop-blur-sm shadow-lg">
+    <Card className="w-full flex flex-col border-border/50 bg-card/80 backdrop-blur-sm shadow-lg max-h-[calc(100vh-160px)] h-[600px]">
       <div className="flex items-center gap-2 p-4 border-b border-border/50 bg-primary/5">
         <div className="p-2 rounded-lg bg-primary/10">
           <MessageSquare className="h-4 w-4 text-primary" />
@@ -45,7 +48,7 @@ export function ChatInterface({ articleId }: ChatInterfaceProps) {
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 space-y-3 p-4 overflow-y-auto min-h-[400px] max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+      <div ref={messagesContainerRef} className="flex-1 space-y-3 p-4 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center h-full">
             <div className="p-4 rounded-full bg-primary/10 mb-4">
@@ -123,7 +126,7 @@ export function ChatInterface({ articleId }: ChatInterfaceProps) {
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
+            <div />
           </>
         )}
       </div>

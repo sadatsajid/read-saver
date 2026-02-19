@@ -1,6 +1,6 @@
 # ⚡ Quick Start (5 Minutes)
 
-Get ArticleIQ running in 5 minutes.
+Get ReadSaver running in 5 minutes.
 
 ## 1. Install Dependencies
 

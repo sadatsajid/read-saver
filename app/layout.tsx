@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ArticleIQ - AI-Powered Article Summarizer",
+  title: "ReadSaver - AI-Powered Article Summarizer",
   description: "Transform any article into actionable insights with AI-powered summarization and interactive Q&A",
   keywords: ["article summarizer", "AI", "Q&A", "RAG", "summarization"],
 };

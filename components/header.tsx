@@ -38,29 +38,24 @@ export function Header() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  // Don't show header on auth pages
-  if (isAuthPage) {
-    return null;
-  }
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex justify-between items-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Article<span className="text-primary">IQ</span>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+              Read<span className="text-primary">Saver</span>
             </h1>
           </Link>
-          <div className="flex items-center gap-3">
-            {!isHomePage && (
+          <div className="flex items-center gap-2 sm:gap-3">
+            {(!isHomePage || isAuthPage) && (
               <Link href="/">
-                <Button variant="ghost" size="sm" className="hover:bg-primary/5">
+                <Button variant="ghost" size="sm" className="hover:bg-primary/5 text-xs sm:text-sm">
                   Home
                 </Button>
               </Link>
             )}
-            {!loading && (
+            {!isAuthPage && !loading && (
               <>
                 {user ? (
                   <>
@@ -69,17 +64,17 @@ export function Header() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="hover:bg-primary/5"
+                          className="hover:bg-primary/5 text-xs sm:text-sm"
                         >
-                          My Articles
+                          <span className="hidden xs:inline">My </span>Articles
                         </Button>
                       </Link>
                     )}
-                    <UserNav user={user} />
+                    <UserNav user={{ id: user.id, email: user.email ?? null }} />
                   </>
                 ) : (
                   <Link href="/auth/login">
-                    <Button size="sm" className="hover:bg-primary/90">
+                    <Button size="sm" className="hover:bg-primary/90 text-xs sm:text-sm">
                       Sign In
                     </Button>
                   </Link>

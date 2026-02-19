@@ -1,6 +1,6 @@
-# 🚀 ArticleIQ Setup Guide
+# 🚀 ReadSaver Setup Guide
 
-Step-by-step guide to get ArticleIQ running locally.
+Step-by-step guide to get ReadSaver running locally.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ Step-by-step guide to get ArticleIQ running locally.
 ## Step 1: Clone & Install
 
 \`\`\`bash
-cd article-iq
+cd readsaver
 pnpm install
 \`\`\`
 
@@ -28,7 +28,7 @@ pnpm install
 1. Go to [supabase.com](https://supabase.com) and sign in
 2. Click **"New Project"**
 3. Fill in:
-   - **Name**: article-iq
+   - **Name**: readsaver
    - **Database Password**: Choose a strong password (save this!)
    - **Region**: Choose closest to you
 4. Wait ~2 minutes for project to initialize
