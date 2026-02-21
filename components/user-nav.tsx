@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, LogOut, FileText, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/platform/auth/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,

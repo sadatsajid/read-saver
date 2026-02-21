@@ -1,4 +1,4 @@
-import { openai, EMBEDDING_MODEL } from './openai';
+import { openai, EMBEDDING_MODEL } from '@/lib/platform/ai/openai';
 
 /**
  * Generate embedding for a single text
@@ -76,4 +76,3 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
-

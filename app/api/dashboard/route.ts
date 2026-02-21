@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/db';
+import { createClient } from '@/lib/platform/auth/supabase/server';
+import { prisma } from '@/lib/platform/db/prisma';
 import { NextResponse } from 'next/server';
-import { DASHBOARD_CONFIG } from '@/lib/dashboard-config';
+import { DASHBOARD_CONFIG } from '@/lib/features/dashboard/config';
 
 /**
  * GET /api/dashboard

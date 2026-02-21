@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/db';
+import { createClient } from '@/lib/platform/auth/supabase/server';
+import { prisma } from '@/lib/platform/db/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteParams {
