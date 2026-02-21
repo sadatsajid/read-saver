@@ -1,4 +1,4 @@
-import { openai, CHAT_MODEL } from './openai';
+import { openai, CHAT_MODEL } from '@/lib/platform/ai/openai';
 import { z } from 'zod';
 
 export const ArticleSummarySchema = z.object({
@@ -128,4 +128,3 @@ export async function generateQuickSummary(
 
   return bullets.slice(0, 5);
 }
-

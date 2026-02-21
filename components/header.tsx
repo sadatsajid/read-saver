@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { UserNav } from '@/components/user-nav';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/platform/auth/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 export function Header() {

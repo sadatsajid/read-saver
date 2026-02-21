@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/db';
-import { createClient } from '@/lib/supabase/server';
-import { createArticleIngestionService } from '@/lib/services/article-ingestion-service';
+import { prisma } from '@/lib/platform/db/prisma';
+import { createClient } from '@/lib/platform/auth/supabase/server';
+import { createArticleIngestionService } from '@/lib/features/ingest/services/article-ingestion-service';
 
 const IngestRequestSchema = z.object({
   url: z.string().url('Please provide a valid URL'),

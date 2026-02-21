@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
-import { prisma } from '@/lib/db';
-import { createClient } from '@/lib/supabase/server';
+import { prisma } from '@/lib/platform/db/prisma';
+import { createClient } from '@/lib/platform/auth/supabase/server';
 import { SummaryDisplay } from '@/components/summary-display';
 import { ChatInterface } from '@/components/chat-interface';
 import { DeleteArticleButton } from '@/components/delete-article-button';

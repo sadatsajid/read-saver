@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { openai, CHAT_MODEL } from '@/lib/openai';
+import { openai, CHAT_MODEL } from '@/lib/platform/ai/openai';
 import {
   retrieveRelevantChunks,
   formatContextForLLM,
   isQuestionAnswerable,
-} from '@/lib/rag';
-import { prisma } from '@/lib/db';
-import { RAG_CONFIG } from '@/lib/rag-config';
-import { getQASystemPrompt, getUserPrompt } from '@/lib/prompts';
+} from '@/lib/features/rag/rag';
+import { prisma } from '@/lib/platform/db/prisma';
+import { RAG_CONFIG } from '@/lib/features/rag/config';
+import { getQASystemPrompt, getUserPrompt } from '@/lib/features/rag/prompts';
 
 // Support both useChat format (messages array) and legacy format (question field)
 const AskRequestSchema = z.object({

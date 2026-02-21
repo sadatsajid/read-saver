@@ -1,14 +1,16 @@
 import type { PrismaClient } from '@prisma/client';
-import { extractArticle } from '@/lib/extraction';
-import { chunkText } from '@/lib/chunking';
-import { generateEmbeddings } from '@/lib/embedding';
-import { generateSummary, type ArticleSummary } from '@/lib/summarization';
-import { INGEST_CONFIG } from '@/lib/ingest-config';
+import { extractArticle } from '@/lib/features/ingest/extraction';
 import {
-  createUserArticleRelationship,
-  insertChunk,
-} from '@/lib/chunk-storage';
-import { prisma as defaultPrisma } from '@/lib/db';
+  generateSummary,
+  type ArticleSummary,
+} from '@/lib/features/ingest/summarization';
+import { INGEST_CONFIG } from '@/lib/features/ingest/config';
+import { createUserArticleRelationship } from '@/lib/features/articles/repositories/user-article-repository';
+import { prisma as defaultPrisma } from '@/lib/platform/db/prisma';
+import {
+  createVectorizationService,
+  type VectorizationService,
+} from '@/lib/features/vectorization/services/vectorization-service';
 
 export interface IngestArticleInput {
   url: string;
@@ -26,8 +28,15 @@ export interface ArticleIngestionService {
   ingest(input: IngestArticleInput): Promise<IngestArticleResult>;
 }
 
+export interface ArticleIngestionServiceDeps {
+  vectorizationService?: VectorizationService;
+}
+
 class LocalArticleIngestionService implements ArticleIngestionService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly vectorizationService: VectorizationService
+  ) {}
 
   async ingest({ url, userId }: IngestArticleInput): Promise<IngestArticleResult> {
     // 1. Check cache first
@@ -91,48 +100,12 @@ class LocalArticleIngestionService implements ArticleIngestionService {
       },
     });
 
-    // 6. Chunking
-    console.log('[IngestService] Chunking content...');
-    const chunks = chunkText(article.content, {
-      maxChars: INGEST_CONFIG.CHUNK_MAX_CHARS,
-      overlap: INGEST_CONFIG.CHUNK_OVERLAP,
+    // 6. Chunk + embed + store vectors
+    console.log('[IngestService] Starting vectorization...');
+    const vectorizationResult = await this.vectorizationService.processAndStore({
+      articleId: savedArticle.id,
+      content: article.content,
     });
-
-    console.log(`[IngestService] Created ${chunks.length} chunks`);
-
-    // 7. Embeddings + storage in batches
-    let processedChunks = 0;
-
-    for (let i = 0; i < chunks.length; i += INGEST_CONFIG.BATCH_SIZE) {
-      const batchEnd = Math.min(i + INGEST_CONFIG.BATCH_SIZE, chunks.length);
-      const batch = chunks.slice(i, batchEnd);
-
-      console.log(
-        `[IngestService] Processing chunks ${i + 1}-${batchEnd} of ${chunks.length}...`
-      );
-
-      const embeddings = await generateEmbeddings(batch.map((c) => c.content));
-
-      for (let j = 0; j < batch.length; j++) {
-        const chunk = batch[j];
-        const embedding = embeddings[j];
-
-        await insertChunk(
-          this.prisma,
-          savedArticle.id,
-          chunk.content,
-          embedding,
-          chunk.index
-        );
-      }
-
-      processedChunks += batch.length;
-
-      // Optional V8 cleanup hint in long-running Node processes
-      if (global.gc) {
-        global.gc();
-      }
-    }
 
     if (userId) {
       const created = await createUserArticleRelationship(
@@ -148,7 +121,7 @@ class LocalArticleIngestionService implements ArticleIngestionService {
     }
 
     console.log(
-      `[IngestService] Article processed successfully: ${savedArticle.id} (${processedChunks} chunks)`
+      `[IngestService] Article processed successfully: ${savedArticle.id} (${vectorizationResult.processedChunks}/${vectorizationResult.chunkCount} chunks)`
     );
 
     return {
@@ -161,7 +134,11 @@ class LocalArticleIngestionService implements ArticleIngestionService {
 }
 
 export function createArticleIngestionService(
-  prismaClient: PrismaClient = defaultPrisma
+  prismaClient: PrismaClient = defaultPrisma,
+  deps: ArticleIngestionServiceDeps = {}
 ): ArticleIngestionService {
-  return new LocalArticleIngestionService(prismaClient);
+  const vectorizationService =
+    deps.vectorizationService ?? createVectorizationService(prismaClient);
+
+  return new LocalArticleIngestionService(prismaClient, vectorizationService);
 }

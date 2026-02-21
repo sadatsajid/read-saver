@@ -1,5 +1,5 @@
-import { prisma } from './db';
-import { generateEmbedding } from './embedding';
+import { prisma } from '@/lib/platform/db/prisma';
+import { generateEmbedding } from '@/lib/features/vectorization/embedding';
 
 export interface RetrievedChunk {
   id: string;
