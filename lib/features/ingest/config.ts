@@ -18,6 +18,13 @@ export const INGEST_CONFIG = {
   EXTRACTION_USER_AGENT:
     'ReadSaverBot/1.0 (+https://readsaver.ai; support@readsaver.ai)',
   EXTRACTION_TIMEOUT_MS: 30000,
+  EXTRACTION_MIN_CONTENT_CHARS: 300,
+  ENABLE_JINA_FALLBACK: process.env.ENABLE_JINA_FALLBACK === 'true',
+  ENABLE_PLAYWRIGHT_FALLBACK:
+    process.env.ENABLE_PLAYWRIGHT_FALLBACK === 'true',
+  PLAYWRIGHT_NAVIGATION_TIMEOUT_MS: 25000,
+  PLAYWRIGHT_WAIT_AFTER_LOAD_MS: 1200,
+  PLAYWRIGHT_WS_ENDPOINT: process.env.PLAYWRIGHT_WS_ENDPOINT || '',
 
   // Robots defaults (strict mode)
   ROBOTS_CACHE_TTL_MS: 12 * 60 * 60 * 1000, // 12 hours

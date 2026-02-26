@@ -32,6 +32,7 @@ enum ExtractionJobStep {
 enum ExtractionMethod {
   jina
   readability
+  playwright
   unknown
 }
 
