@@ -7,6 +7,7 @@ export interface ExtractedArticle {
   excerpt?: string;
   author?: string;
   siteName?: string;
+  method?: 'jina' | 'readability' | 'unknown';
 }
 
 /**
@@ -85,6 +86,7 @@ async function extractWithJina(url: string): Promise<ExtractedArticle> {
     excerpt: content.slice(0, 200) + '...',
     author: data.data?.author || undefined,
     siteName: data.data?.siteName || undefined,
+    method: 'jina',
   };
 }
 
@@ -130,6 +132,7 @@ async function extractWithReadability(
     excerpt: article.excerpt || article.textContent.slice(0, 200) + '...',
     author: article.byline || undefined,
     siteName: article.siteName || undefined,
+    method: 'readability',
   };
 }
 
@@ -170,4 +173,3 @@ export function isLikelyArticleUrl(url: string): boolean {
     return false;
   }
 }
-

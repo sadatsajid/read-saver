@@ -13,6 +13,28 @@ datasource db {
   extensions = [pgvector(map: "vector")]
 }
 
+enum ExtractionJobStatus {
+  queued
+  running
+  succeeded
+  failed
+  blocked_robots
+}
+
+enum ExtractionJobStep {
+  normalize
+  robots
+  extract
+  persist
+  complete
+}
+
+enum ExtractionMethod {
+  jina
+  readability
+  unknown
+}
+
 model User {
   id           String        @id // Uses Supabase Auth UUID, no default
   email        String        @unique
@@ -57,10 +79,10 @@ model UserArticle {
 }
 
 model Chunk {
-  id         String                      @id @default(cuid())
+  id         String                       @id @default(cuid())
   articleId  String
-  article    Article                     @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  content    String                      @db.Text
+  article    Article                      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  content    String                       @db.Text
   embedding  Unsupported("vector(1536)")?
   chunkIndex Int
 
@@ -68,3 +90,65 @@ model Chunk {
   @@map("chunks")
 }
 
+model ExtractionJob {
+  id           String              @id @default(cuid())
+  sourceUrl    String
+  canonicalUrl String
+  domain       String
+  status       ExtractionJobStatus @default(queued)
+  step         ExtractionJobStep   @default(normalize)
+  attemptCount Int                 @default(0)
+  errorCode    String?
+  errorMessage String?             @db.Text
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  completedAt  DateTime?
+  result       ExtractionResult?
+
+  @@index([status, createdAt])
+  @@index([domain, createdAt])
+  @@index([canonicalUrl])
+  @@map("extraction_jobs")
+}
+
+model ExtractionResult {
+  id              String           @id @default(cuid())
+  extractionJobId String           @unique
+  extractionJob   ExtractionJob    @relation(fields: [extractionJobId], references: [id], onDelete: Cascade)
+  title           String
+  contentText     String           @db.Text
+  excerpt         String?          @db.Text
+  author          String?
+  siteName        String?
+  method          ExtractionMethod @default(unknown)
+  qualityScore    Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([method])
+  @@map("extraction_results")
+}
+
+model DomainPolicy {
+  domain         String   @id
+  robotsAllowed  Boolean  @default(true)
+  maxRps         Float    @default(1)
+  maxConcurrency Int      @default(1)
+  blockReason    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("domain_policies")
+}
+
+model RobotsCache {
+  domain     String   @id
+  robotsBody String   @db.Text
+  fetchedAt  DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("robots_cache")
+}
