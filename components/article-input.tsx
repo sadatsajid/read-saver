@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { getStatusMessageForProgress } from '@/lib/shared/utils/loading-progress';
+import { useFakeProgress } from '@/lib/shared/hooks/use-fake-progress';
 
 interface ArticleInputProps {
   onSuccess: (data: {
@@ -27,7 +29,8 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [progress, setProgress] = useState('');
+  const [status, setStatus] = useState('');
+  const [progress, setProgress] = useFakeProgress(loading);
 
   const getProgressMessage = (
     status: ExtractionJobResponse['status'],
@@ -65,7 +68,7 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
       }
 
       const data = (await response.json()) as ExtractionJobResponse;
-      setProgress(getProgressMessage(data.status, data.step));
+      setStatus(getProgressMessage(data.status, data.step));
 
       if (
         data.status === 'succeeded' ||
@@ -85,7 +88,7 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setProgress('Submitting extraction job...');
+    setStatus('Submitting extraction job...');
 
     try {
       const extractionResponse = await fetch('/api/extract', {
@@ -110,7 +113,7 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
       let job: ExtractionJobResponse;
       if (extractionData.status === 'succeeded') {
         job = extractionData;
-        setProgress('Extraction complete.');
+        setStatus('Extraction complete.');
       } else if (
         extractionData.status === 'blocked_robots' ||
         extractionData.status === 'failed'
@@ -118,7 +121,7 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
         job = extractionData;
       } else {
         // Async fallback path: poll queued/running job to completion.
-        setProgress(
+        setStatus(
           extractionData.status === 'queued'
             ? 'Queued for extraction...'
             : 'Processing extraction...'
@@ -137,7 +140,7 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
         throw new Error(job.errorMessage || 'Extraction failed');
       }
 
-      setProgress('Generating summary and embeddings...');
+      setStatus('Generating summary and embeddings...');
 
       const ingestResponse = await fetch('/api/ingest', {
         method: 'POST',
@@ -151,16 +154,21 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
       }
 
       const data = await ingestResponse.json();
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 400));
       onSuccess(data);
       setUrl('');
-      setProgress('');
+      setStatus('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
-      setProgress('');
+      setStatus('');
     } finally {
       setLoading(false);
+      setProgress(0);
     }
   };
+
+  const statusMessage = status || getStatusMessageForProgress(progress);
 
   return (
     <div className="w-full space-y-4">
@@ -174,8 +182,8 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
           className="flex-1 h-12 sm:h-12 text-base border-2 focus:border-primary/50 transition-colors"
           required
         />
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={loading || !url}
           size="lg"
           className="h-12 px-6 sm:px-8 text-base font-semibold w-full sm:w-auto whitespace-nowrap"
@@ -183,13 +191,31 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Processing...
+              Analyzing...
             </>
           ) : (
             'Analyze Article'
           )}
         </Button>
       </form>
+
+      {loading && (
+        <div className="space-y-3 animate-slide-up">
+          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-primary font-medium">{statusMessage}</span>
+            <span className="text-xs text-muted-foreground">
+              This usually takes 15–30 seconds
+            </span>
+          </div>
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive" className="animate-slide-up">
@@ -198,15 +224,11 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
         </Alert>
       )}
 
-      {loading && progress && (
-        <p className="text-xs sm:text-sm text-muted-foreground text-center px-2 animate-pulse">
-          {progress}
+      {!loading && (
+        <p className="text-xs sm:text-sm text-muted-foreground text-center px-2">
+          Works with any article URL from the web • No signup required
         </p>
       )}
-
-      <p className="text-xs sm:text-sm text-muted-foreground text-center px-2">
-        Works with any article URL from the web • No signup required
-      </p>
     </div>
   );
 }
