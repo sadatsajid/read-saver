@@ -16,8 +16,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ReadSaver - AI-Powered Article Summarizer",
-  description: "Transform any article into actionable insights with AI-powered summarization and interactive Q&A",
+  description:
+    "Transform any article into actionable insights with AI-powered summarization and interactive Q&A",
   keywords: ["article summarizer", "AI", "Q&A", "RAG", "summarization"],
+  icons: {
+    icon: "/favicon/favicon.ico",
+    shortcut: "/favicon/favicon.ico",
+    apple: "/favicon/favicon.ico",
+  },
 };
 
 export default function RootLayout({
