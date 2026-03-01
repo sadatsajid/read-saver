@@ -1,22 +1,73 @@
-# ReadSaver – Summarized LinkedIn Post
+# ReadSaver – In-House Scraper LinkedIn Post
 
 ---
 
-I've always been fascinated by how AI can help us consume information more efficiently. So I dove into **Retrieval-Augmented Generation (RAG)** and built **ReadSaver** – a product that solves a real problem: **saving hours of reading time**.
+I just finished replacing my extraction dependency with an **in-house article scraper pipeline** in ReadSaver.
 
-**The idea:** Paste any article URL and get instant AI summaries, key takeaways, and a Q&A that answers your questions using the actual article content. **ReadSaver** – because your time is valuable.
+The goal was simple: tighter control over reliability, robots.txt compliance, and **cost as usage grows**.
 
-I wanted to learn RAG from the ground up: vector embeddings, chunking and storage, retrieval, and the full pipeline from URL to intelligent Q&A. Here’s the condensed version of how it works:
+### Why I built this in-house (motivation)
 
-**Tech stack:** Next.js 15, TypeScript, Tailwind + shadcn/ui, Supabase (PostgreSQL + pgvector), OpenAI for summarization and embeddings, Jina AI Reader + Mozilla Readability for extraction. Deployed on Vercel.
+- Vendor extraction APIs are great for speed, but long-term they create cost pressure.
+- At low volume, pay-per-request is fine. At higher volume, extraction becomes one of the biggest variable costs.
+- Free-tier limits and rate limits also introduce product risk (inconsistent UX under load).
+- I wanted predictable unit economics and no hard dependency on one provider.
 
-**Under the hood:**  
-URL → content extraction (Jina/Readability) → AI summarization (TL;DR, takeaways, outline) → smart chunking (1000 chars, 200 overlap) → embeddings (text-embedding-3-small) → stored in pgvector. When you ask a question, your query is embedded, we run similarity search, retrieve the most relevant chunks, and the LLM answers with citations – all in under 30 seconds from paste to insight.
+In short: this was a **cost + control** decision, not just a technical one.
 
-What used to take 15–30 minutes to read is now digestible in under a minute, with the option to go deeper via Q&A. Building this end-to-end taught me vector search, chunking strategies, and what it takes to ship a production RAG system.
+### Requirements I designed for
 
-If you’re into AI, RAG, or just want to read less and learn more – I’d love to hear your take.
+**Functional requirements**
 
-#AI #RAG #LLM #MachineLearning #SoftwareDevelopment #BuildingInPublic #NextJS #Supabase
+- User pastes any article URL and gets a usable summary flow.
+- End-to-end experience should feel fast enough for interactive use.
+- Strict robots.txt compliance (blocked means blocked).
+- Works globally, not region-specific.
+
+**Technical requirements**
+
+- Initial scale target: ~500 URLs/day.
+- Latency target: user wait time typically under ~1 minute for extraction + summary flow.
+- In-house-first extraction with controlled fallbacks (Readability -> Playwright -> optional Jina).
+- Async-safe architecture: immediate processing path + queued worker fallback + polling.
+- Deduplication/canonicalization to reduce duplicate extraction work and cost.
+
+### What I built
+
+- URL normalization + dedupe by canonical URL
+- Strict `robots.txt` gate (fail-closed)
+- Extraction fallback chain:
+  1. Direct fetch + Mozilla Readability (primary)
+  2. Playwright render fallback for JS-heavy pages
+  3. Optional Jina fallback for hard edge cases
+- Extraction jobs with statuses/steps (`queued`, `running`, `blocked_robots`, `failed`, `succeeded`)
+- Worker endpoint + cron processing for queued jobs
+- Async client flow with polling fallback
+
+### Tech stack
+
+`Next.js + TypeScript + Prisma + PostgreSQL (Supabase) + OpenAI + Playwright + Readability`
+
+### Why this matters
+
+Before this, extraction was effectively vendor-first.
+
+Now it is:
+
+- **in-house first**
+- **policy aware**
+- **easier to observe and control**
+- **more predictable costs and margins at scale**
+- **ready to scale from pet project to production incrementally**
+
+### End-to-end pipeline
+
+`URL -> extraction job -> robots check -> content extraction -> persisted extraction result -> summarization -> chunking -> embeddings -> retrieval`
+
+Biggest lesson: if you care about long-term product quality, extraction cannot be a black box. It is core infrastructure.
+
+If you are building a RAG product and thinking about extraction architecture, happy to share details.
+
+#AI #RAG #LLM #WebScraping #SoftwareArchitecture #BuildingInPublic #NextJS #Prisma #Supabase
 
 ---

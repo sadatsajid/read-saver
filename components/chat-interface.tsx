@@ -1,6 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { SendHorizontal, Loader2, MessageSquare, RotateCcw } from 'lucide-react'
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRef, useEffect } from 'react';
+import { linkifyNode } from '@/lib/shared/utils/linkify';
 
 interface ChatInterfaceProps {
   articleId: string;
@@ -92,10 +94,31 @@ export function ChatInterface({ articleId }: ChatInterfaceProps) {
                     }`}
                   >
                     {m.role === 'user' ? (
-                      <p className="text-sm leading-relaxed">{m.content}</p>
+                      <p className="text-sm leading-relaxed">{linkifyNode(m.content)}</p>
                     ) : (
                       <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-p:text-sm prose-p:leading-relaxed prose-strong:text-foreground prose-ul:text-muted-foreground prose-li:text-sm">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            a: ({ href, children }) => {
+                              const linkHref = href || '#';
+                              const isExternal = /^https?:\/\//i.test(linkHref);
+
+                              return (
+                                <Link
+                                  href={linkHref}
+                                  target={isExternal ? '_blank' : undefined}
+                                  rel={isExternal ? 'noopener noreferrer' : undefined}
+                                  className="underline underline-offset-2 break-all"
+                                >
+                                  {children}
+                                </Link>
+                              );
+                            },
+                            p: ({ children }) => <p>{linkifyNode(children)}</p>,
+                            li: ({ children }) => <li>{linkifyNode(children)}</li>,
+                          }}
+                        >
                           {m.content}
                         </ReactMarkdown>
                       </div>
@@ -174,4 +197,3 @@ export function ChatInterface({ articleId }: ChatInterfaceProps) {
     </Card>
   );
 }
-
