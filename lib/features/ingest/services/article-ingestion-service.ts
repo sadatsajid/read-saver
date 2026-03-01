@@ -1,5 +1,4 @@
 import type { PrismaClient } from '@prisma/client';
-import { extractArticle } from '@/lib/features/ingest/extraction';
 import {
   generateSummary,
   type ArticleSummary,
@@ -7,6 +6,11 @@ import {
 import { INGEST_CONFIG } from '@/lib/features/ingest/config';
 import { createUserArticleRelationship } from '@/lib/features/articles/repositories/user-article-repository';
 import { prisma as defaultPrisma } from '@/lib/platform/db/prisma';
+import {
+  createExtractionOrchestratorService,
+  type ExtractionOrchestratorService,
+} from '@/lib/features/extraction/services/extraction-orchestrator-service';
+import { normalizeArticleUrl } from '@/lib/features/extraction/services/url-normalization-service';
 import {
   createVectorizationService,
   type VectorizationService,
@@ -29,19 +33,27 @@ export interface ArticleIngestionService {
 }
 
 export interface ArticleIngestionServiceDeps {
+  extractionOrchestratorService?: ExtractionOrchestratorService;
   vectorizationService?: VectorizationService;
 }
 
 class LocalArticleIngestionService implements ArticleIngestionService {
   constructor(
     private readonly prisma: PrismaClient,
+    private readonly extractionOrchestratorService: ExtractionOrchestratorService,
     private readonly vectorizationService: VectorizationService
   ) {}
 
   async ingest({ url, userId }: IngestArticleInput): Promise<IngestArticleResult> {
+    const canonicalUrl = normalizeArticleUrl(url);
+
     // 1. Check cache first
     const existing = await this.prisma.article.findFirst({
-      where: { url },
+      where: {
+        url: {
+          in: [url, canonicalUrl],
+        },
+      },
       select: {
         id: true,
         title: true,
@@ -63,8 +75,8 @@ class LocalArticleIngestionService implements ArticleIngestionService {
     }
 
     // 2. Extract content
-    console.log('[IngestService] Extracting article from:', url);
-    const article = await extractArticle(url);
+    console.log('[IngestService] Extracting article from:', canonicalUrl);
+    const article = await this.extractionOrchestratorService.extractFromUrl(url);
 
     // 3. Guardrail: content size
     const contentSizeBytes = Buffer.byteLength(article.content, 'utf8');
@@ -86,7 +98,7 @@ class LocalArticleIngestionService implements ArticleIngestionService {
     console.log('[IngestService] Saving article metadata...');
     const savedArticle = await this.prisma.article.create({
       data: {
-        url: article.url,
+        url: article.canonicalUrl,
         title: article.title,
         content: article.content,
         summary: JSON.stringify(summary),
@@ -137,8 +149,15 @@ export function createArticleIngestionService(
   prismaClient: PrismaClient = defaultPrisma,
   deps: ArticleIngestionServiceDeps = {}
 ): ArticleIngestionService {
+  const extractionOrchestratorService =
+    deps.extractionOrchestratorService ??
+    createExtractionOrchestratorService(prismaClient);
   const vectorizationService =
     deps.vectorizationService ?? createVectorizationService(prismaClient);
 
-  return new LocalArticleIngestionService(prismaClient, vectorizationService);
+  return new LocalArticleIngestionService(
+    prismaClient,
+    extractionOrchestratorService,
+    vectorizationService
+  );
 }

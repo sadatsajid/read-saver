@@ -9,6 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Lightbulb, List, FileText } from 'lucide-react';
+import { linkifyText } from '@/lib/shared/utils/linkify';
 
 interface SummaryDisplayProps {
   title: string;
@@ -36,7 +37,7 @@ export function SummaryDisplay({ summary }: SummaryDisplayProps) {
                 •
               </span>
               <span className="text-muted-foreground text-sm leading-relaxed flex-1">
-                {point}
+                {linkifyText(point)}
               </span>
             </li>
           ))}
@@ -57,7 +58,7 @@ export function SummaryDisplay({ summary }: SummaryDisplayProps) {
                 {i + 1}.
               </span>
               <span className="text-muted-foreground text-sm leading-relaxed flex-1">
-                {takeaway}
+                {linkifyText(takeaway)}
               </span>
             </li>
           ))}
@@ -75,7 +76,7 @@ export function SummaryDisplay({ summary }: SummaryDisplayProps) {
           {data.map((section, i) => (
             <div key={i} className="group/section">
               <h4 className="font-semibold text-foreground text-sm mb-1.5 group-hover/section:text-primary transition-colors">
-                {section.title}
+                {linkifyText(section.title)}
               </h4>
               {section.subsections && section.subsections.length > 0 && (
                 <ul className="ml-3 space-y-1">
@@ -87,7 +88,7 @@ export function SummaryDisplay({ summary }: SummaryDisplayProps) {
                       <span className="text-primary mt-0.5 shrink-0 group-hover/sub:scale-110 transition-transform">
                         ▸
                       </span>
-                      <span className="leading-relaxed">{sub}</span>
+                      <span className="leading-relaxed">{linkifyText(sub)}</span>
                     </li>
                   ))}
                 </ul>
@@ -137,4 +138,3 @@ export function SummaryDisplay({ summary }: SummaryDisplayProps) {
     </div>
   );
 }
-

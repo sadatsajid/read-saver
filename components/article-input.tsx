@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { getStatusMessageForProgress } from '@/lib/shared/utils/loading-progress';
 import { useFakeProgress } from '@/lib/shared/hooks/use-fake-progress';
+import { useArticleAnalysis } from '@/lib/features/extraction/hooks/use-article-analysis';
 
 interface ArticleInputProps {
   onSuccess: (data: {
@@ -20,39 +21,33 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
   const [progress, setProgress] = useFakeProgress(loading);
+  const { analyzeArticle } = useArticleAnalysis();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setStatus('');
 
     try {
-      const response = await fetch('/api/ingest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to process article');
-      }
-
-      const data = await response.json();
+      const data = await analyzeArticle(url, setStatus);
       setProgress(100);
       await new Promise((r) => setTimeout(r, 400));
       onSuccess(data);
       setUrl('');
+      setStatus('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
+      setStatus('');
     } finally {
       setLoading(false);
       setProgress(0);
     }
   };
 
-  const statusMessage = getStatusMessageForProgress(progress);
+  const statusMessage = status || getStatusMessageForProgress(progress);
 
   return (
     <div className="w-full space-y-4">
@@ -104,7 +99,7 @@ export function ArticleInput({ onSuccess }: ArticleInputProps) {
       {error && (
         <Alert variant="destructive" className="animate-slide-up">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <AlertDescription className="break-words">{error}</AlertDescription>
+          <AlertDescription className="wrap-break-word">{error}</AlertDescription>
         </Alert>
       )}
 
