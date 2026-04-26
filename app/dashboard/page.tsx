@@ -1,14 +1,29 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/platform/auth/supabase/client';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { DeleteArticleButton } from '@/components/delete-article-button';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Calendar, FileText, ArrowLeft, Sparkles, Lightbulb, BarChart3, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  BarChart3,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  Lightbulb,
+  Loader2,
+  Plus,
+  Search,
+  Sparkles,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { DeleteArticleButton } from '@/components/delete-article-button';
+import { createClient } from '@/lib/platform/auth/supabase/client';
 
 interface DashboardData {
   stats: {
@@ -26,20 +41,22 @@ interface DashboardData {
   }>;
 }
 
+const itemsPerPage = 6;
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; email: string | null } | null>(null);
+  const [user, setUser] = useState<{ id: string; email: string | null } | null>(
+    null
+  );
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
   const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Get user
         const {
           data: { user: authUser },
         } = await supabase.auth.getUser();
@@ -54,7 +71,6 @@ export default function DashboardPage() {
           email: authUser.email ?? null,
         });
 
-        // Fetch dashboard data
         const response = await fetch('/api/dashboard');
         if (!response.ok) {
           throw new Error('Failed to fetch dashboard data');
@@ -64,7 +80,9 @@ export default function DashboardPage() {
         setData(dashboardData);
       } catch (err) {
         console.error('Dashboard error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+        setError(
+          err instanceof Error ? err.message : 'Failed to load dashboard'
+        );
       } finally {
         setLoading(false);
       }
@@ -75,273 +93,293 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-mesh">
-        <div className="container mx-auto p-4 max-w-7xl">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center space-y-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground">Loading dashboard...</p>
-            </div>
+      <DashboardShell>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" />
+            <p className="mt-4 text-sm text-muted-foreground">
+              Preparing your reading library...
+            </p>
           </div>
         </div>
-      </div>
+      </DashboardShell>
     );
   }
 
   if (error || !user || !data) {
     return (
-      <div className="min-h-screen gradient-mesh">
-        <div className="container mx-auto p-4 max-w-7xl">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <Card className="border-destructive">
-              <CardContent className="p-6 text-center">
-                <p className="text-destructive mb-4">
-                  {error || 'Failed to load dashboard'}
-                </p>
-                <Button onClick={() => window.location.reload()}>
-                  Retry
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+      <DashboardShell>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Card className="max-w-md rounded-md border-destructive/30">
+            <CardContent className="p-6 text-center">
+              <p className="mb-5 text-sm text-destructive">
+                {error || 'Failed to load dashboard'}
+              </p>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </DashboardShell>
     );
   }
+
+  const totalPages = Math.ceil(data.articles.length / itemsPerPage);
+  const visibleArticles = data.articles.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const stats = [
     {
       id: 'articles',
-      title: 'Articles Analyzed',
+      label: 'Articles briefed',
       value: data.stats.articlesAnalyzed.toString(),
       icon: FileText,
-      changePercentage: data.stats.articlesAnalyzed > 0 ? '+100%' : '0%',
     },
     {
       id: 'insights',
-      title: 'Total Insights',
+      label: 'Insights saved',
       value: data.stats.totalInsights.toString(),
       icon: Lightbulb,
-      changePercentage: data.stats.totalInsights > 0 ? '+100%' : '0%',
     },
     {
       id: 'avg',
-      title: 'Avg. Insights per Article',
+      label: 'Avg. insight depth',
       value: data.stats.avgInsightsPerArticle.toString(),
       icon: BarChart3,
-      changePercentage: data.stats.avgInsightsPerArticle > 0 ? 'Active' : '0%',
     },
   ];
 
   return (
-    <div className="min-h-screen gradient-mesh">
-      <div className="container mx-auto p-4 max-w-7xl">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <Link href="/">
-                <Button variant="ghost" size="icon" className="hover:bg-primary/5">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-              <h1 className="text-4xl font-bold tracking-tight">My Articles</h1>
-            </div>
-            <div className="flex items-center gap-2 ml-11">
-              <div className="p-1.5 rounded-full bg-primary/10">
-                <Sparkles className="h-3 w-3 text-primary" />
-              </div>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-            </div>
+    <DashboardShell>
+      <div className="mx-auto w-full max-w-7xl px-6 py-10 sm:py-14">
+        <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <Link
+              href="/"
+              className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Home
+            </Link>
+            <p className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-primary">
+              <Sparkles className="h-4 w-4" />
+              {user.email}
+            </p>
+            <h1 className="max-w-4xl text-5xl font-semibold leading-[1.02] tracking-tight sm:text-7xl">
+              Everything you meant to read.
+              <br />
+              <span className="text-muted-foreground">Now organized.</span>
+            </h1>
           </div>
-          <Link href="/">
-            <Button size="lg" className="gap-2">
+
+          <Link href="/" className="shrink-0">
+            <Button size="lg" className="h-11 rounded-full px-6">
               <Plus className="h-4 w-4" />
-              Analyze New Article
+              Analyze article
             </Button>
           </Link>
-        </div>
+        </header>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <section className="mt-12 grid overflow-hidden rounded-md border bg-border sm:grid-cols-3">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card 
-                key={stat.id}
-                className="border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-lg transition-all hover:border-primary/20 gap-4"
-              >
-                <CardHeader className="flex items-center">
-                  <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <span className="text-2xl font-bold">{stat.value}</span>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                  <span className="font-semibold">{stat.title}</span>
-                  <p className="space-x-2">
-                    <span className="text-sm">{stat.changePercentage}</span>
-                    <span className="text-muted-foreground text-sm">than last week</span>
-                  </p>
-                </CardContent>
-              </Card>
+              <div key={stat.id} className="bg-background p-6 sm:p-8">
+                <div className="mb-8 flex items-center justify-between">
+                  <Icon className="h-5 w-5 text-primary" />
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-5xl font-semibold tracking-tight sm:text-6xl">
+                  {stat.value}
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {stat.label}
+                </p>
+              </div>
             );
           })}
-        </div>
+        </section>
 
-        {/* Articles List */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-          <CardHeader className="border-b border-border/50">
-            <CardTitle>My Articles</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <section className="mt-12">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Reading library
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Briefs, takeaways, and source links kept in one place.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <Search className="h-4 w-4" />
+              {data.stats.totalCount} saved{' '}
+              {data.stats.totalCount === 1 ? 'article' : 'articles'}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-md border bg-card">
             {data.articles.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
-                  <FileText className="h-10 w-10 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">No articles yet</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Start by analyzing your first article to see summaries, key takeaways, and insights!
-                </p>
-                <Link href="/">
-                  <Button size="lg" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
+              <EmptyLibrary />
             ) : (
               <>
-                {/* Paginated Articles List */}
-                <div className="divide-y divide-border/50">
-                  {data.articles
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((article) => (
-                      <div
-                        key={article.id}
-                        className="p-4 sm:p-6 hover:bg-muted/30 transition-colors"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                          {/* Left Column: Title and Metadata */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-base font-semibold mb-2 line-clamp-2 break-words">
-                              {article.title}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5 shrink-0" />
-                                <span className="whitespace-nowrap">
-                                  {new Date(article.createdAt).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                  })}
-                                </span>
-                              </div>
-                              <Badge variant="secondary" className="gap-1.5 text-xs">
-                                <Lightbulb className="h-3 w-3 shrink-0" />
-                                {article.insightsCount} {article.insightsCount === 1 ? 'insight' : 'insights'}
-                              </Badge>
-                            </div>
-                          </div>
-                          {/* Right Column: Action Buttons */}
-                          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-                            <Link href={`/article/${article.id}`} className="flex-1 sm:flex-initial">
-                              <Button variant="default" size="sm" className="w-full sm:w-auto">
-                                View Summary
-                              </Button>
-                            </Link>
-                            <a
-                              href={article.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button variant="outline" size="sm" className="hover:bg-primary/5">
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </Button>
-                            </a>
-                            <DeleteArticleButton
-                              articleId={article.id}
-                              articleTitle={article.title}
-                              variant="ghost"
-                              size="sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                <div className="divide-y">
+                  {visibleArticles.map((article) => (
+                    <ArticleRow key={article.id} article={article} />
+                  ))}
                 </div>
 
-                {/* Pagination Controls */}
-                {data.articles.length > itemsPerPage && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t border-border/50">
-                    <div className="text-sm text-muted-foreground text-center sm:text-left">
-                      Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-                      {Math.min(currentPage * itemsPerPage, data.articles.length)} of{' '}
-                      {data.articles.length} articles
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                        className="gap-1"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        <span className="hidden sm:inline">Previous</span>
-                      </Button>
-                      <div className="flex items-center gap-1">
-                        {Array.from(
-                          { length: Math.ceil(data.articles.length / itemsPerPage) },
-                          (_, i) => i + 1
-                        )
-                          .filter(
-                            (page) =>
-                              page === 1 ||
-                              page === Math.ceil(data.articles.length / itemsPerPage) ||
-                              Math.abs(page - currentPage) <= 1
-                          )
-                          .map((page, idx, arr) => (
-                            <div key={page} className="flex items-center gap-1">
-                              {idx > 0 && arr[idx - 1] !== page - 1 && (
-                                <span className="px-1 sm:px-2 text-muted-foreground">...</span>
-                              )}
-                              <Button
-                                variant={currentPage === page ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setCurrentPage(page)}
-                                className="min-w-8 sm:min-w-10"
-                              >
-                                {page}
-                              </Button>
-                            </div>
-                          ))}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(Math.ceil(data.articles.length / itemsPerPage), prev + 1)
-                          )
-                        }
-                        disabled={currentPage >= Math.ceil(data.articles.length / itemsPerPage)}
-                        className="gap-1"
-                      >
-                        <span className="hidden sm:inline">Next</span>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                {totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={data.articles.length}
+                    onPageChange={setCurrentPage}
+                  />
                 )}
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
+    </DashboardShell>
+  );
+}
+
+function DashboardShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="-m-6 min-h-[calc(100vh-3rem)] bg-background text-foreground">
+      {children}
     </div>
   );
 }
 
+function ArticleRow({
+  article,
+}: {
+  article: DashboardData['articles'][number];
+}) {
+  return (
+    <article className="grid gap-5 p-5 transition-colors hover:bg-muted/40 sm:grid-cols-[1fr_auto] sm:p-6">
+      <div className="min-w-0">
+        <Link
+          href={`/article/${article.id}`}
+          className="group inline-flex max-w-full items-start gap-2"
+        >
+          <h3 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight group-hover:text-primary">
+            {article.title}
+          </h3>
+          <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+        </Link>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" />
+            {new Date(article.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
+          <Badge variant="secondary" className="rounded-full">
+            {article.insightsCount}{' '}
+            {article.insightsCount === 1 ? 'insight' : 'insights'}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 sm:justify-end">
+        <Link href={`/article/${article.id}`}>
+          <Button variant="outline" size="sm" className="rounded-full">
+            Summary
+          </Button>
+        </Link>
+        <a href={article.url} target="_blank" rel="noopener noreferrer">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-full"
+            aria-label="Open source article"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </a>
+        <DeleteArticleButton
+          articleId={article.id}
+          articleTitle={article.title}
+          variant="ghost"
+          size="sm"
+        />
+      </div>
+    </article>
+  );
+}
+
+function EmptyLibrary() {
+  return (
+    <div className="px-6 py-20 text-center">
+      <FileText className="mx-auto h-9 w-9 text-primary" />
+      <h3 className="mt-6 text-3xl font-semibold tracking-tight">
+        Start with one article.
+      </h3>
+      <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-muted-foreground">
+        Paste the link you keep meaning to read. ReadSaver will turn it into a
+        brief you can revisit anytime.
+      </p>
+      <Link href="/" className="mt-8 inline-flex">
+        <Button size="lg" className="rounded-full px-6">
+          <Plus className="h-4 w-4" />
+          Analyze first article
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+}) {
+  const firstItem = (currentPage - 1) * itemsPerPage + 1;
+  const lastItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+    <div className="flex flex-col gap-4 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-muted-foreground">
+        Showing {firstItem} to {lastItem} of {totalItems}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="rounded-full"
+          aria-label="Previous page"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="min-w-20 text-center text-sm text-muted-foreground">
+          {currentPage} / {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage >= totalPages}
+          className="rounded-full"
+          aria-label="Next page"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}

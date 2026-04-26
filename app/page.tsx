@@ -2,9 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { ArticleInput } from '@/components/article-input';
-import { Sparkles, MessageSquare, BookOpen, Zap, TrendingUp, Clock, Users, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
@@ -18,184 +18,232 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen gradient-mesh">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
-        <section className="text-center space-y-6 sm:space-y-8 py-12 md:py-20 animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-2 animate-scale-in">
-            <Zap className="h-4 w-4 shrink-0" />
-            <span>Powered by Advanced AI</span>
-          </div>
-          
-          <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight leading-tight px-2">
-            Transform Articles into
+    <div className="bg-background text-foreground">
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="animate-slide-up mx-auto max-w-6xl px-6 pb-20 text-center sm:pt-32 sm:pb-28 md:pb-32">
+          <p className="text-primary mb-6 text-sm font-medium tracking-wide sm:mb-8 sm:text-base">
+            Introducing ReadSaver
+          </p>
+          <h1 className="text-5xl leading-[1.05] font-semibold tracking-tight sm:text-7xl md:text-8xl">
+            The world&rsquo;s news.
             <br />
-            <span className="bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Actionable Insights
-            </span>
-          </h2>
-          
-          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
-            Get instant summaries, key takeaways, and ask questions about any
-            article on the web. Save hours of reading time with AI-powered intelligence.
+            <span className="text-muted-foreground">In the time it takes</span>
+            <br />
+            <span className="text-muted-foreground">to sip coffee.</span>
+          </h1>
+          <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg leading-relaxed sm:mt-10 sm:text-xl md:text-2xl">
+            Every story. Every signal. Distilled into the takeaways that
+            actually matter — so you stay informed without falling behind.
           </p>
 
-          {/* Stats Bar */}
-          <div className="flex flex-wrap justify-center gap-6 sm:gap-8 md:gap-12 pt-6 sm:pt-8">
-            <StatItem icon={<TrendingUp className="h-5 w-5" />} value="10x" label="Faster Reading" />
-            <StatItem icon={<Clock className="h-5 w-5" />} value="<30s" label="Summary Time" />
-            <StatItem icon={<Users className="h-5 w-5" />} value="1000+" label="Articles Analyzed" />
-          </div>
-        </section>
-
-        {/* Input Section */}
-        <section className="flex justify-center mb-16 sm:mb-20 md:mb-24 animate-scale-in">
-          <div className="w-full max-w-3xl px-2 sm:px-4">
+          <div className="mx-auto mt-12 max-w-2xl sm:mt-16">
             <ArticleInput onSuccess={handleSuccess} />
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Features Grid */}
-        <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto mb-16 sm:mb-20 md:mb-24">
-          <FeatureCard
-            icon={<Sparkles className="h-6 w-6 text-primary" />}
-            title="Instant Summaries"
-            description="Get TL;DR, key takeaways, and structured outlines in seconds. No more skimming through long articles."
-            delay="0"
-          />
-          <FeatureCard
-            icon={<MessageSquare className="h-6 w-6 text-primary" />}
-            title="Ask Questions"
-            description="Chat with the article and get answers backed by citations. Dive deeper into specific topics instantly."
-            delay="100"
-          />
-          <FeatureCard
-            icon={<BookOpen className="h-6 w-6 text-primary" />}
-            title="Save & Organize"
-            description="Keep your reading history and insights in one place. Build your knowledge base effortlessly."
-            delay="200"
-          />
-        </section>
+      {/* Benefit 1 — Dark */}
+      <section className="bg-foreground text-background">
+        <div className="mx-auto max-w-5xl px-6 py-24 text-center sm:py-32 md:py-40">
+          <p className="text-background/60 mb-6 text-sm font-medium tracking-[0.2em] uppercase">
+            Stay ahead
+          </p>
+          <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight sm:text-6xl md:text-7xl">
+            Stay ahead.
+            <br />
+            <span className="text-background/60">Without staying up.</span>
+          </h2>
+          <p className="text-background/70 mx-auto mt-8 max-w-2xl text-lg leading-relaxed sm:text-xl">
+            The news doesn&rsquo;t sleep. You should. Drop in any article and
+            walk away with the insights — not the inbox dread.
+          </p>
+        </div>
+      </section>
 
-        {/* How It Works */}
-        <section className="max-w-4xl mx-auto mb-16 sm:mb-20 md:mb-24">
-          <div className="text-center space-y-4 mb-8 sm:mb-12 px-4">
-            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold">How it works</h3>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Three simple steps to transform any article into actionable insights
+      {/* Benefit 2 — Light */}
+      <section className="bg-background">
+        <div className="mx-auto max-w-5xl px-6 py-24 text-center sm:py-32 md:py-40">
+          <p className="text-primary mb-6 text-sm font-medium tracking-[0.2em] uppercase">
+            Less noise
+          </p>
+          <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight sm:text-6xl md:text-7xl">
+            Less reading.
+            <br />
+            <span className="text-muted-foreground">More knowing.</span>
+          </h2>
+          <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg leading-relaxed sm:text-xl">
+            Skim less. Skip nothing. ReadSaver pulls the signal from the noise,
+            so a 20-minute read becomes a 20-second brief.
+          </p>
+        </div>
+      </section>
+
+      {/* Benefit 3 — Subtle accent */}
+      <section className="bg-secondary">
+        <div className="mx-auto max-w-5xl px-6 py-24 text-center sm:py-32 md:py-40">
+          <p className="text-primary mb-6 text-sm font-medium tracking-[0.2em] uppercase">
+            Finally caught up
+          </p>
+          <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight sm:text-6xl md:text-7xl">
+            Your curiosity,
+            <br />
+            <span className="text-muted-foreground">finally caught up.</span>
+          </h2>
+          <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg leading-relaxed sm:text-xl">
+            That tab you&rsquo;ve kept open for three weeks? Read it now. The
+            one your friend sent last Tuesday? Done. Every article you meant to
+            get to — finally got to.
+          </p>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="bg-background">
+        <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32">
+          <div className="mb-16 text-center sm:mb-24">
+            <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
+              Built for the way
+              <br />
+              <span className="text-muted-foreground">you actually read.</span>
+            </h2>
+          </div>
+
+          <div className="bg-border grid gap-px overflow-hidden rounded-3xl md:grid-cols-3">
+            <FeaturePanel
+              eyebrow="01"
+              title="Instant Summary."
+              description="Paste a link. Get a TL;DR, the key takeaways, and a clean outline. Before your next notification buzzes."
+            />
+            <FeaturePanel
+              eyebrow="02"
+              title="Ask Anything."
+              description="Have a question about what you just read? Ask it. ReadSaver answers — with citations pulled straight from the source."
+            />
+            <FeaturePanel
+              eyebrow="03"
+              title="A Library That Remembers."
+              description="Every article you save stays with you. Searchable. Organized. Yours — across every device."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Emotional Section — Dark */}
+      <section className="bg-foreground text-background">
+        <div className="mx-auto max-w-4xl px-6 py-32 text-center sm:py-40 md:py-48">
+          <h2 className="text-5xl leading-[1.02] font-semibold tracking-tight sm:text-7xl md:text-8xl">
+            You were never
+            <br />
+            behind.
+          </h2>
+          <p className="text-background/50 mt-6 text-3xl leading-[1.05] font-semibold tracking-tight sm:mt-8 sm:text-5xl md:text-6xl">
+            You were just busy.
+          </p>
+          <div className="text-background/70 mx-auto mt-12 max-w-2xl space-y-6 text-lg leading-relaxed sm:mt-16 sm:text-xl">
+            <p>
+              There&rsquo;s a quiet weight to the unread tabs, the
+              saved-for-later that became saved-forever, the headlines you
+              nodded through without really reading.
+            </p>
+            <p className="text-background">
+              ReadSaver lifts that weight. Not by making you read more — but by
+              making what you read finally count.
             </p>
           </div>
-          
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 px-2">
-            <StepCard
-              number="01"
-              title="Paste URL"
-              description="Simply paste any article URL from the web"
-            />
-            <StepCard
-              number="02"
-              title="AI Analysis"
-              description="Our AI extracts, analyzes, and summarizes the content"
-            />
-            <StepCard
-              number="03"
-              title="Get Insights"
-              description="Ask questions and dive deeper into specific topics"
-            />
-          </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Benefits Section */}
-        <section className="bg-card/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 mb-16 sm:mb-20 md:mb-24 border border-border/50 mx-2">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">
-              Why Choose ReadSaver?
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-              <BenefitItem text="Save hours of reading time every week" />
-              <BenefitItem text="Never miss key insights from articles" />
-              <BenefitItem text="Build a searchable knowledge base" />
-              <BenefitItem text="Get answers with source citations" />
-              <BenefitItem text="Works with any article on the web" />
-              <BenefitItem text="Privacy-focused and secure" />
-            </div>
+      {/* Proof */}
+      <section className="bg-background">
+        <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32 md:py-40">
+          <div className="mb-16 text-center sm:mb-20">
+            <p className="text-primary mb-6 text-sm font-medium tracking-[0.2em] uppercase">
+              The technology
+            </p>
+            <h2 className="mx-auto max-w-3xl text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
+              Built on the most advanced
+              <br />
+              <span className="text-muted-foreground">AI on the planet.</span>
+            </h2>
+            <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg leading-relaxed sm:text-xl">
+              Powered by GPT-4o and a custom retrieval engine, ReadSaver
+              doesn&rsquo;t just shorten articles — it understands them. Vector
+              search reads between the lines. Citations keep it honest.
+              Streaming brings the answer the moment you ask.
+            </p>
           </div>
-        </section>
 
-        {/* CTA Section */}
-        <section className="text-center space-y-4 sm:space-y-6 py-12 sm:py-16 mb-12 sm:mb-16 px-4">
-          <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-            Ready to transform your reading?
-          </h3>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start analyzing articles in seconds. No signup required to get started.
+          <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-12">
+            <Stat value="99%" label="less reading time" />
+            <Stat value="100%" label="of the substance" />
+            <Stat value="0" label="ads, trackers, or filler" />
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="bg-secondary">
+        <div className="mx-auto max-w-4xl px-6 py-32 text-center sm:py-40 md:py-48">
+          <h2 className="text-5xl leading-[1.05] font-semibold tracking-tight sm:text-7xl md:text-8xl">
+            The news,
+            <br />
+            <span className="text-muted-foreground">on your time.</span>
+          </h2>
+          <p className="text-muted-foreground mx-auto mt-8 max-w-xl text-lg leading-relaxed sm:mt-10 sm:text-xl">
+            Paste your first article. See what a minute of reading really feels
+            like.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-            <Link href="/dashboard" className="w-full sm:w-auto">
-              <Button size="lg" className="text-base sm:text-lg px-6 sm:px-8 w-full sm:w-auto">
-                View Dashboard
-                <ArrowRight className="ml-2 h-4 sm:h-5 w-4 sm:w-5" />
+          <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/dashboard">
+              <Button size="lg" className="h-12 rounded-full px-8 text-base">
+                Try ReadSaver — Free
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
-        </section>
-      </div>
+          <p className="text-muted-foreground mt-6 text-sm">
+            No card. No clutter. Just clarity.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
 
-function FeatureCard({
-  icon,
+function FeaturePanel({
+  eyebrow,
   title,
   description,
-  delay,
 }: {
-  icon: React.ReactNode;
+  eyebrow: string;
   title: string;
   description: string;
-  delay?: string;
 }) {
   return (
-    <div 
-      className="flex flex-col items-start text-left space-y-3 sm:space-y-4 p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-1"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-primary/10 text-primary">
-        {icon}
+    <div className="bg-background flex min-h-[320px] flex-col gap-6 p-8 sm:p-10 md:p-12">
+      <span className="text-primary text-sm font-medium tracking-wide">
+        {eyebrow}
+      </span>
+      <h3 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">
+        {title}
+      </h3>
+      <p className="text-muted-foreground text-base leading-relaxed sm:text-lg">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-primary text-6xl leading-none font-semibold tracking-tight sm:text-7xl md:text-8xl">
+        {value}
       </div>
-      <h3 className="font-bold text-lg sm:text-xl">{title}</h3>
-      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
-function StatItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1.5 sm:gap-2 min-w-[100px]">
-      <div className="text-primary">{icon}</div>
-      <div className="text-2xl sm:text-3xl font-bold">{value}</div>
-      <div className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">{label}</div>
-    </div>
-  );
-}
-
-function StepCard({ number, title, description }: { number: string; title: string; description: string }) {
-  return (
-    <div className="text-center space-y-3 sm:space-y-4 p-5 sm:p-6 rounded-xl bg-card/50 border border-border/50 hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-1">
-      <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 text-primary text-xl sm:text-2xl font-bold">
-        {number}
+      <div className="text-muted-foreground mt-3 text-sm tracking-wide sm:mt-4 sm:text-base">
+        {label}
       </div>
-      <h4 className="font-semibold text-base sm:text-lg">{title}</h4>
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
-function BenefitItem({ text }: { text: string }) {
-  return (
-    <div className="flex items-start sm:items-center gap-2.5 sm:gap-3">
-      <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5 sm:mt-0" />
-      <span className="text-sm sm:text-base text-muted-foreground">{text}</span>
     </div>
   );
 }

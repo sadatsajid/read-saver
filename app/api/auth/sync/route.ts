@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/platform/auth/supabase/server';
 import { prisma } from '@/lib/platform/db/prisma';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/shared/logger/logger';
 
 /**
  * Sync authenticated user from Supabase Auth to Prisma User table
@@ -30,16 +31,14 @@ export async function POST() {
       },
     });
 
+    logger.info({ userId: user.id }, 'User synced');
+
     return NextResponse.json({
       message: 'User synced successfully',
       userId: user.id,
     });
   } catch (error) {
-    console.error('User sync error:', error);
-    return NextResponse.json(
-      { error: 'Failed to sync user' },
-      { status: 500 }
-    );
+    logger.error({ err: error }, 'User sync failed');
+    return NextResponse.json({ error: 'Failed to sync user' }, { status: 500 });
   }
 }
-

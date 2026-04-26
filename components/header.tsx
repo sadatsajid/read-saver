@@ -7,17 +7,23 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/platform/auth/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { Menu, X } from 'lucide-react';
+
+const NAV_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/about', label: 'About' },
+  { href: '/dashboard', label: 'Articles' },
+];
 
 export function Header() {
   const pathname = usePathname();
-  const isHomePage = pathname === '/';
   const isAuthPage = pathname.startsWith('/auth');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
-    // Get initial session
     const getUser = async () => {
       const {
         data: { user },
@@ -28,7 +34,6 @@ export function Header() {
 
     getUser();
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -38,53 +43,111 @@ export function Header() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
-      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex justify-between items-center">
-          <Link href="/" className="hover:opacity-80 transition-opacity">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-xl supports-backdrop-filter:bg-background/50">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="flex h-12 items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center hover:opacity-70 transition-opacity">
+            <span className="text-base font-semibold tracking-tight">
               Read<span className="text-primary">Saver</span>
-            </h1>
+            </span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {(!isHomePage || isAuthPage) && (
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="hover:bg-primary/5 text-xs sm:text-sm">
-                  Home
-                </Button>
-              </Link>
-            )}
+
+          {/* Center Nav — Desktop */}
+          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
+            {NAV_LINKS.map((link) => {
+              const active =
+                link.href === '/'
+                  ? pathname === '/'
+                  : pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-[13px] tracking-tight transition-colors ${
+                    active
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right — Auth */}
+          <div className="flex items-center gap-3">
             {!isAuthPage && !loading && (
               <>
                 {user ? (
-                  <>
-                    {!pathname.startsWith('/dashboard') && (
-                      <Link href="/dashboard">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="hover:bg-primary/5 text-xs sm:text-sm"
-                        >
-                          <span className="hidden xs:inline">My </span>Articles
-                        </Button>
-                      </Link>
-                    )}
-                    <UserNav user={{ id: user.id, email: user.email ?? null }} />
-                  </>
+                  <UserNav user={{ id: user.id, email: user.email ?? null }} />
                 ) : (
-                  <Link href="/auth/login">
-                    <Button size="sm" className="hover:bg-primary/90 text-xs sm:text-sm">
+                  <Link href="/auth/login" className="hidden sm:block">
+                    <Button
+                      size="sm"
+                      className="rounded-full h-8 px-4 text-[13px]"
+                    >
                       Sign In
                     </Button>
                   </Link>
                 )}
               </>
             )}
+
+            {/* Mobile menu toggle */}
+            <button
+              type="button"
+              onClick={() => setMobileOpen((v) => !v)}
+              className="md:hidden inline-flex items-center justify-center w-8 h-8 rounded-md text-foreground hover:bg-accent transition-colors"
+              aria-label="Toggle menu"
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="md:hidden pb-4 pt-2 animate-fade-in">
+            <nav className="flex flex-col gap-1">
+              {NAV_LINKS.map((link) => {
+                const active =
+                  link.href === '/'
+                    ? pathname === '/'
+                    : pathname.startsWith(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`px-3 py-2.5 rounded-md text-sm tracking-tight transition-colors ${
+                      active
+                        ? 'bg-accent text-foreground'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+              {!isAuthPage && !loading && !user && (
+                <Link
+                  href="/auth/login"
+                  className="mt-2 px-3 py-2.5 rounded-md text-sm font-medium bg-primary text-primary-foreground text-center"
+                >
+                  Sign In
+                </Link>
+              )}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );
 }
-

@@ -9,6 +9,7 @@ import {
 import { prisma } from '@/lib/platform/db/prisma';
 import { RAG_CONFIG } from '@/lib/features/rag/config';
 import { getQASystemPrompt, getUserPrompt } from '@/lib/features/rag/prompts';
+import { logger } from '@/lib/shared/logger/logger';
 
 // Support both useChat format (messages array) and legacy format (question field)
 const AskRequestSchema = z.object({
@@ -26,6 +27,8 @@ const AskRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const start = Date.now();
+
   try {
     // 1. Parse and validate request (public route – no auth required)
     const body = await request.json();
@@ -36,7 +39,9 @@ export async function POST(request: NextRequest) {
     let question: string;
     if (parsed.messages && parsed.messages.length > 0) {
       // useChat format: get the last user message (optimized with findLast)
-      const lastUserMessage = parsed.messages.findLast((m) => m.role === 'user');
+      const lastUserMessage = parsed.messages.findLast(
+        (m) => m.role === 'user'
+      );
       if (!lastUserMessage?.content?.trim()) {
         return NextResponse.json(
           {
@@ -101,14 +106,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (!article) {
-      return NextResponse.json(
-        { error: 'Article not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Article not found' }, { status: 404 });
     }
 
     // 5. Retrieve relevant chunks using vector similarity
-    console.log('[Q&A] Retrieving relevant chunks for question:', question);
+    logger.debug(
+      {
+        articleId,
+        questionLength: question.length,
+      },
+      'Retrieving relevant chunks'
+    );
+
     const chunks = await retrieveRelevantChunks(
       articleId,
       question,
@@ -116,7 +125,10 @@ export async function POST(request: NextRequest) {
       RAG_CONFIG.MIN_SIMILARITY
     );
 
-    console.log(`[Q&A] Found ${chunks.length} relevant chunks`);
+    logger.debug(
+      { articleId, chunksCount: chunks.length },
+      'Relevant chunks found'
+    );
 
     // 8. Check if we have enough context to answer
     if (chunks.length === 0) {
@@ -134,12 +146,15 @@ export async function POST(request: NextRequest) {
     const meaningfulChunks = chunks.filter(
       (chunk) => chunk.content.trim().length >= RAG_CONFIG.MIN_CHUNK_LENGTH
     );
-    const chunksToUse =
-      meaningfulChunks.length > 0 ? meaningfulChunks : chunks;
+    const chunksToUse = meaningfulChunks.length > 0 ? meaningfulChunks : chunks;
 
     if (meaningfulChunks.length === 0) {
-      console.warn(
-        '[Q&A] All retrieved chunks are too short, using all chunks anyway'
+      logger.warn(
+        {
+          articleId,
+          chunksCount: chunks.length,
+        },
+        'All retrieved chunks are too short, using all chunks'
       );
     }
 
@@ -150,9 +165,15 @@ export async function POST(request: NextRequest) {
       RAG_CONFIG.ANSWERABLE_THRESHOLD
     );
 
-    // Log for debugging
-    console.log(
-      `[Q&A] Using ${chunksToUse.length} chunks (${chunks.length} total retrieved), context length: ${context.length} chars`
+    logger.debug(
+      {
+        articleId,
+        chunksToUse: chunksToUse.length,
+        totalChunks: chunks.length,
+        contextLength: context.length,
+        answerable,
+      },
+      'Prepared question context'
     );
 
     // 8. Prepare prompts
@@ -199,7 +220,7 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(finishMessage));
           controller.close();
         } catch (error) {
-          console.error('[Q&A] Streaming error:', error);
+          logger.error({ err: error, articleId }, 'Q&A streaming failed');
           controller.error(error);
         }
       },
@@ -212,7 +233,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[Q&A] Error:', error);
+    logger.error(
+      {
+        err: error,
+        durationMs: Date.now() - start,
+      },
+      'Q&A request failed'
+    );
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

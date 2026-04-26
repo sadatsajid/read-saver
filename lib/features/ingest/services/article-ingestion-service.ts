@@ -11,6 +11,7 @@ import {
   createVectorizationService,
   type VectorizationService,
 } from '@/lib/features/vectorization/services/vectorization-service';
+import { logger } from '@/lib/shared/logger/logger';
 
 export interface IngestArticleInput {
   url: string;
@@ -38,7 +39,10 @@ class LocalArticleIngestionService implements ArticleIngestionService {
     private readonly vectorizationService: VectorizationService
   ) {}
 
-  async ingest({ url, userId }: IngestArticleInput): Promise<IngestArticleResult> {
+  async ingest({
+    url,
+    userId,
+  }: IngestArticleInput): Promise<IngestArticleResult> {
     // 1. Check cache first
     const existing = await this.prisma.article.findFirst({
       where: { url },
@@ -63,14 +67,14 @@ class LocalArticleIngestionService implements ArticleIngestionService {
     }
 
     // 2. Extract content
-    console.log('[IngestService] Extracting article from:', url);
+    logger.info({ url }, 'Extracting article');
     const article = await extractArticle(url);
 
     // 3. Guardrail: content size
     const contentSizeBytes = Buffer.byteLength(article.content, 'utf8');
     const contentSizeMB = contentSizeBytes / (1024 * 1024);
 
-    console.log(`[IngestService] Article size: ${contentSizeMB.toFixed(2)}MB`);
+    logger.debug({ contentSizeMB }, 'Extracted article size calculated');
 
     if (contentSizeMB > INGEST_CONFIG.MAX_CONTENT_MB) {
       throw new Error(
@@ -79,11 +83,11 @@ class LocalArticleIngestionService implements ArticleIngestionService {
     }
 
     // 4. Summarize
-    console.log('[IngestService] Generating summary...');
+    logger.info({ title: article.title }, 'Generating article summary');
     const summary = await generateSummary(article.title, article.content);
 
     // 5. Save article metadata
-    console.log('[IngestService] Saving article metadata...');
+    logger.info({ title: article.title }, 'Saving article metadata');
     const savedArticle = await this.prisma.article.create({
       data: {
         url: article.url,
@@ -101,11 +105,16 @@ class LocalArticleIngestionService implements ArticleIngestionService {
     });
 
     // 6. Chunk + embed + store vectors
-    console.log('[IngestService] Starting vectorization...');
-    const vectorizationResult = await this.vectorizationService.processAndStore({
-      articleId: savedArticle.id,
-      content: article.content,
-    });
+    logger.info(
+      { articleId: savedArticle.id },
+      'Starting article vectorization'
+    );
+    const vectorizationResult = await this.vectorizationService.processAndStore(
+      {
+        articleId: savedArticle.id,
+        content: article.content,
+      }
+    );
 
     if (userId) {
       const created = await createUserArticleRelationship(
@@ -114,14 +123,23 @@ class LocalArticleIngestionService implements ArticleIngestionService {
         savedArticle.id
       );
       if (created) {
-        console.log(
-          `[IngestService] User-article relationship created: ${userId} -> ${savedArticle.id}`
+        logger.info(
+          {
+            userId,
+            articleId: savedArticle.id,
+          },
+          'User-article relationship created'
         );
       }
     }
 
-    console.log(
-      `[IngestService] Article processed successfully: ${savedArticle.id} (${vectorizationResult.processedChunks}/${vectorizationResult.chunkCount} chunks)`
+    logger.info(
+      {
+        articleId: savedArticle.id,
+        processedChunks: vectorizationResult.processedChunks,
+        chunkCount: vectorizationResult.chunkCount,
+      },
+      'Article processed successfully'
     );
 
     return {

@@ -2,12 +2,15 @@ import { createClient } from '@/lib/platform/auth/supabase/server';
 import { prisma } from '@/lib/platform/db/prisma';
 import { NextResponse } from 'next/server';
 import { DASHBOARD_CONFIG } from '@/lib/features/dashboard/config';
+import { logger } from '@/lib/shared/logger/logger';
 
 /**
  * GET /api/dashboard
  * Get dashboard statistics and user's articles
  */
 export async function GET() {
+  const start = Date.now();
+
   try {
     // 1. Check authentication
     const supabase = await createClient();
@@ -61,6 +64,16 @@ export async function GET() {
       where: { userId: user.id },
     });
 
+    logger.debug(
+      {
+        userId: user.id,
+        articlesCount: articles.length,
+        totalCount,
+        durationMs: Date.now() - start,
+      },
+      'Dashboard data fetched'
+    );
+
     // 6. Format response
     return NextResponse.json({
       stats: {
@@ -78,7 +91,13 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    console.error('[Dashboard] Error:', error);
+    logger.error(
+      {
+        err: error,
+        durationMs: Date.now() - start,
+      },
+      'Dashboard request failed'
+    );
 
     if (error instanceof Error) {
       return NextResponse.json(

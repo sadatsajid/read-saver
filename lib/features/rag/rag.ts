@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/platform/db/prisma';
 import { generateEmbedding } from '@/lib/features/vectorization/embedding';
+import { logger } from '@/lib/shared/logger/logger';
 
 export interface RetrievedChunk {
   id: string;
@@ -60,8 +61,14 @@ export async function retrieveRelevantChunks(
   } catch (error: unknown) {
     // If that fails, try casting from TEXT to VECTOR
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('operator does not exist') || errorMessage.includes('cannot cast')) {
-      console.warn('Embeddings may be stored as TEXT, attempting cast...');
+    if (
+      errorMessage.includes('operator does not exist') ||
+      errorMessage.includes('cannot cast')
+    ) {
+      logger.warn(
+        { articleId },
+        'Embeddings may be stored as text, attempting vector cast'
+      );
       chunks = await prisma.$queryRawUnsafe<
         Array<{
           id: string;

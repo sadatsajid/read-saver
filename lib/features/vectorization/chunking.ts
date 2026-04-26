@@ -1,3 +1,5 @@
+import { logger } from '@/lib/shared/logger/logger';
+
 export interface ChunkOptions {
   maxChars?: number;
   overlap?: number;
@@ -39,7 +41,15 @@ export function chunkText(
   // Diagnostic logging
   const textLength = cleanedText.length;
   const expectedChunks = Math.ceil(textLength / (maxChars - overlap));
-  console.log(`[Chunking] Starting: textLength=${textLength}, maxChars=${maxChars}, overlap=${overlap}, expectedChunks≈${expectedChunks}`);
+  logger.debug(
+    {
+      textLength,
+      maxChars,
+      overlap,
+      expectedChunks,
+    },
+    'Chunking started'
+  );
 
   // Safety: Calculate maximum reasonable iterations (2x expected + buffer)
   const MAX_ITERATIONS = Math.max(expectedChunks * 3, 10000);
@@ -55,14 +65,15 @@ export function chunkText(
 
     // Safety check: Prevent infinite loops
     if (iterations > MAX_ITERATIONS) {
-      console.error(
-        `[Chunking] SAFETY BREAK: Exceeded ${MAX_ITERATIONS} iterations!`,
+      logger.error(
         {
+          maxIterations: MAX_ITERATIONS,
           start,
           textLength,
           chunksCreated: chunks.length,
           lastStart,
-        }
+        },
+        'Chunking safety break triggered'
       );
       throw new Error(
         `Chunking failed: Exceeded maximum iterations (${MAX_ITERATIONS}). Possible infinite loop. Text length: ${textLength}, Chunks created: ${chunks.length}`
@@ -71,14 +82,14 @@ export function chunkText(
 
     // Check if start is advancing
     if (start <= lastStart && start > 0) {
-      console.error(
-        `[Chunking] WARNING: Start position not advancing!`,
+      logger.error(
         {
           lastStart,
           start,
           end: Math.min(start + maxChars, cleanedText.length),
           chunksCreated: chunks.length,
-        }
+        },
+        'Chunking start position is not advancing'
       );
       // Force advancement to prevent infinite loop
       start = lastStart + Math.max(1, maxChars - overlap);
@@ -118,13 +129,18 @@ export function chunkText(
 
     // Move start position with overlap - FIXED LOGIC
     const newStart = end - overlap;
-    
+
     // Ensure we always advance forward
     if (newStart <= start) {
       // If overlap would cause us to go backwards or stay same, force minimum advancement
       start = start + Math.max(1, maxChars - overlap);
-      console.warn(
-        `[Chunking] Forced advancement: oldStart=${lastStart}, newStart=${start}, end=${end}`
+      logger.warn(
+        {
+          oldStart: lastStart,
+          newStart: start,
+          end,
+        },
+        'Chunking forced advancement'
       );
     } else {
       start = newStart;
@@ -132,20 +148,31 @@ export function chunkText(
 
     // Prevent infinite loop if we're stuck at start=0
     if (start === 0 && chunks.length > 0) {
-      console.warn('[Chunking] Breaking: stuck at start=0 with chunks already created');
+      logger.warn('Chunking stopped after start remained at 0');
       break;
     }
 
     // Log progress every 100 chunks
     if (chunks.length % 100 === 0 && chunks.length > 0) {
-      console.log(
-        `[Chunking] Progress: ${chunks.length} chunks, start=${start}/${textLength} (${((start / textLength) * 100).toFixed(1)}%)`
+      logger.debug(
+        {
+          chunksCreated: chunks.length,
+          start,
+          textLength,
+          progressPercent: Number(((start / textLength) * 100).toFixed(1)),
+        },
+        'Chunking progress'
       );
     }
   }
 
-  console.log(
-    `[Chunking] Complete: ${chunks.length} chunks created in ${iterations} iterations (expected ~${expectedChunks})`
+  logger.debug(
+    {
+      chunksCreated: chunks.length,
+      iterations,
+      expectedChunks,
+    },
+    'Chunking complete'
   );
 
   return chunks;
@@ -175,4 +202,3 @@ export function chunkByTokens(
     overlap: overlapChars,
   });
 }
-

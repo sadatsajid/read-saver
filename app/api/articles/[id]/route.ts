@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/platform/auth/supabase/server';
 import { prisma } from '@/lib/platform/db/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/shared/logger/logger';
 
 interface RouteParams {
   params: Promise<{
@@ -14,10 +15,7 @@ interface RouteParams {
  * The article itself remains in the database for other users
  * Requires authentication
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
@@ -38,10 +36,7 @@ export async function DELETE(
     });
 
     if (!article) {
-      return NextResponse.json(
-        { error: 'Article not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Article not found' }, { status: 404 });
     }
 
     // 3. Check if user has this article in their collection
@@ -71,8 +66,12 @@ export async function DELETE(
       },
     });
 
-    console.log(
-      `[Articles] Article removed from collection: ${user.id} -> ${id}`
+    logger.info(
+      {
+        userId: user.id,
+        articleId: id,
+      },
+      'Article removed from collection'
     );
 
     return NextResponse.json({
@@ -80,7 +79,7 @@ export async function DELETE(
       articleId: id,
     });
   } catch (error) {
-    console.error('[Articles] Delete error:', error);
+    logger.error({ err: error }, 'Article delete failed');
 
     if (error instanceof Error) {
       return NextResponse.json(
@@ -130,10 +129,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!article) {
-      return NextResponse.json(
-        { error: 'Article not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Article not found' }, { status: 404 });
     }
 
     // 3. Parse summary JSON (stored as string in database)
@@ -160,7 +156,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       isOwner,
     });
   } catch (error) {
-    console.error('[Articles] Get error:', error);
+    logger.error({ err: error }, 'Article fetch failed');
 
     if (error instanceof Error) {
       return NextResponse.json(

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/platform/auth/supabase/server';
 import { prisma } from '@/lib/platform/db/prisma';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/shared/logger/logger';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -12,10 +13,19 @@ export async function GET(request: Request) {
 
   // Handle errors from Supabase
   if (error) {
-    console.error('Auth callback error:', error);
     const errorCode = requestUrl.searchParams.get('error_code');
-    const errorDescription = requestUrl.searchParams.get('error_description') || error;
-    
+    const errorDescription =
+      requestUrl.searchParams.get('error_description') || error;
+
+    logger.error(
+      {
+        error,
+        errorCode,
+        errorDescription,
+      },
+      'Auth callback returned an error'
+    );
+
     // Handle specific error types with better messages
     let userFriendlyError = errorDescription;
     if (errorCode === 'otp_expired' || errorDescription?.includes('expired')) {
@@ -23,7 +33,7 @@ export async function GET(request: Request) {
     } else if (error === 'access_denied') {
       userFriendlyError = errorDescription || 'verification_failed';
     }
-    
+
     return NextResponse.redirect(
       `${origin}/auth/login?error=${encodeURIComponent(userFriendlyError)}`
     );
@@ -41,7 +51,7 @@ export async function GET(request: Request) {
       });
 
       if (verifyError) {
-        console.error('Email verification error:', verifyError);
+        logger.error({ err: verifyError }, 'Email verification failed');
         return NextResponse.redirect(
           `${origin}/auth/login?error=${encodeURIComponent(verifyError.message)}`
         );
@@ -49,7 +59,7 @@ export async function GET(request: Request) {
 
       user = data.user;
     } catch (err) {
-      console.error('Token verification error:', err);
+      logger.error({ err }, 'Token verification failed');
       return NextResponse.redirect(
         `${origin}/auth/login?error=verification_failed`
       );
@@ -58,18 +68,25 @@ export async function GET(request: Request) {
   // Handle PKCE code (from OAuth or Supabase redirects)
   else if (code) {
     try {
-      const { data, error: codeError } = await supabase.auth.exchangeCodeForSession(code);
+      const { data, error: codeError } =
+        await supabase.auth.exchangeCodeForSession(code);
 
       if (codeError) {
         // Check if it's a PKCE verifier error (common with email verification links opened in different browser)
-        if (codeError.message?.includes('pkce_code_verifier') || codeError.code === 'pkce_code_verifier_not_found') {
-          console.error('PKCE verifier missing - email verification link opened in different browser');
+        if (
+          codeError.message?.includes('pkce_code_verifier') ||
+          codeError.code === 'pkce_code_verifier_not_found'
+        ) {
+          logger.warn(
+            { err: codeError },
+            'PKCE verifier missing during auth callback'
+          );
           return NextResponse.redirect(
             `${origin}/auth/login?error=${encodeURIComponent('Verification link must be opened in the same browser where you signed up. Please try signing up again or check your email for a new verification link.')}`
           );
         }
-        
-        console.error('PKCE code exchange error:', codeError);
+
+        logger.error({ err: codeError }, 'PKCE code exchange failed');
         return NextResponse.redirect(
           `${origin}/auth/login?error=${encodeURIComponent(codeError.message || 'Authentication failed')}`
         );
@@ -77,10 +94,8 @@ export async function GET(request: Request) {
 
       user = data.user;
     } catch (err) {
-      console.error('Code exchange error:', err);
-      return NextResponse.redirect(
-        `${origin}/auth/login?error=auth_failed`
-      );
+      logger.error({ err }, 'Code exchange failed');
+      return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
     }
   }
 
@@ -99,15 +114,15 @@ export async function GET(request: Request) {
         },
       });
     } catch (syncError) {
-      console.error('User sync error:', syncError);
+      logger.error({ err: syncError, userId: user.id }, 'User sync failed');
       // Don't fail the login if sync fails - user can still use the app
     }
   }
 
   // Check if there's a redirect parameter
   const redirect = requestUrl.searchParams.get('redirect');
-  const redirectPath = redirect && redirect.startsWith('/') ? redirect : '/dashboard';
-  
+  const redirectPath =
+    redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+
   return NextResponse.redirect(`${origin}${redirectPath}`);
 }
-

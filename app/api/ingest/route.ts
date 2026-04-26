@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/platform/db/prisma';
 import { createClient } from '@/lib/platform/auth/supabase/server';
 import { createArticleIngestionService } from '@/lib/features/ingest/services/article-ingestion-service';
+import { logger } from '@/lib/shared/logger/logger';
 
 const IngestRequestSchema = z.object({
   url: z.string().url('Please provide a valid URL'),
@@ -10,6 +11,8 @@ const IngestRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const start = Date.now();
+
   try {
     // 1. Parse and validate request
     const body = await request.json();
@@ -43,6 +46,15 @@ export async function POST(request: NextRequest) {
       userId,
     });
 
+    logger.info(
+      {
+        articleId: result.articleId,
+        cached: result.cached,
+        durationMs: Date.now() - start,
+      },
+      'Article ingest completed'
+    );
+
     return NextResponse.json({
       articleId: result.articleId,
       title: result.title,
@@ -50,7 +62,13 @@ export async function POST(request: NextRequest) {
       cached: result.cached,
     });
   } catch (error) {
-    console.error('[Ingest] Error:', error);
+    logger.error(
+      {
+        err: error,
+        durationMs: Date.now() - start,
+      },
+      'Article ingest failed'
+    );
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

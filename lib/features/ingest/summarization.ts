@@ -1,4 +1,5 @@
 import { openai, CHAT_MODEL } from '@/lib/platform/ai/openai';
+import { logger } from '@/lib/shared/logger/logger';
 import { z } from 'zod';
 
 export const ArticleSummarySchema = z.object({
@@ -71,12 +72,28 @@ Please provide a comprehensive summary following the JSON structure specified.`;
     max_completion_tokens: 8000,
   });
 
-  console.log('OpenAI response:', JSON.stringify(response, null, 2));
+  logger.debug(
+    {
+      model: response.model,
+      finishReason: response.choices[0]?.finish_reason,
+      usage: response.usage,
+    },
+    'OpenAI summary response received'
+  );
 
   const responseContent = response.choices[0]?.message?.content;
   if (!responseContent) {
-    console.error('Empty response from OpenAI. Full response:', response);
-    throw new Error(`No response from OpenAI. Finish reason: ${response.choices[0]?.finish_reason || 'unknown'}`);
+    logger.error(
+      {
+        model: response.model,
+        finishReason: response.choices[0]?.finish_reason,
+        usage: response.usage,
+      },
+      'Empty response from OpenAI'
+    );
+    throw new Error(
+      `No response from OpenAI. Finish reason: ${response.choices[0]?.finish_reason || 'unknown'}`
+    );
   }
 
   // Parse and validate response
@@ -84,7 +101,10 @@ Please provide a comprehensive summary following the JSON structure specified.`;
     const parsed = JSON.parse(responseContent);
     return ArticleSummarySchema.parse(parsed);
   } catch {
-    console.error('Failed to parse summary:', responseContent);
+    logger.error(
+      { responseLength: responseContent.length },
+      'Failed to parse summary response'
+    );
     throw new Error('Failed to generate valid summary format');
   }
 }

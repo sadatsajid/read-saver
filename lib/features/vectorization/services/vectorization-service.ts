@@ -10,6 +10,7 @@ import {
   createEmbeddingService,
   type EmbeddingService,
 } from '@/lib/features/vectorization/services/embedding-service';
+import { logger } from '@/lib/shared/logger/logger';
 
 export interface VectorizationInput {
   articleId: string;
@@ -42,7 +43,10 @@ class LocalVectorizationService implements VectorizationService {
     content,
   }: VectorizationInput): Promise<VectorizationResult> {
     const chunks = this.chunkingService.chunk(content);
-    console.log(`[VectorizationService] Created ${chunks.length} chunks`);
+    logger.debug(
+      { articleId, chunkCount: chunks.length },
+      'Article chunks created'
+    );
 
     let processedChunks = 0;
 
@@ -50,8 +54,14 @@ class LocalVectorizationService implements VectorizationService {
       const batchEnd = Math.min(i + INGEST_CONFIG.BATCH_SIZE, chunks.length);
       const batch = chunks.slice(i, batchEnd);
 
-      console.log(
-        `[VectorizationService] Processing chunks ${i + 1}-${batchEnd} of ${chunks.length}...`
+      logger.debug(
+        {
+          articleId,
+          batchStart: i + 1,
+          batchEnd,
+          chunkCount: chunks.length,
+        },
+        'Processing chunk batch'
       );
 
       const embeddings = await this.embeddingService.embedBatch(

@@ -1,4 +1,5 @@
 import { Readability } from '@mozilla/readability';
+import { logger } from '@/lib/shared/logger/logger';
 
 export interface ExtractedArticle {
   title: string;
@@ -28,14 +29,17 @@ export async function extractArticle(url: string): Promise<ExtractedArticle> {
   try {
     return await extractWithJina(url);
   } catch (error) {
-    console.log('Jina extraction failed, trying Readability:', error);
+    logger.warn(
+      { err: error, url },
+      'Jina extraction failed, trying Readability'
+    );
   }
 
   // Fallback to Readability
   try {
     return await extractWithReadability(url);
   } catch (error) {
-    console.error('Readability extraction failed:', error);
+    logger.error({ err: error, url }, 'Readability extraction failed');
     throw new Error('Failed to extract article content from URL');
   }
 }
@@ -48,7 +52,7 @@ async function extractWithJina(url: string): Promise<ExtractedArticle> {
   const jinaUrl = `https://r.jina.ai/${encodeURIComponent(url)}`;
 
   const headers: Record<string, string> = {
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
 
   if (process.env.JINA_API_KEY) {
@@ -63,7 +67,9 @@ async function extractWithJina(url: string): Promise<ExtractedArticle> {
   if (!response.ok) {
     // 402 = Payment Required (free tier limit), 429 = Rate Limited
     if (response.status === 402 || response.status === 429) {
-      throw new Error(`Jina Reader API limit reached (${response.status}). Falling back to alternative extraction.`);
+      throw new Error(
+        `Jina Reader API limit reached (${response.status}). Falling back to alternative extraction.`
+      );
     }
     throw new Error(`Jina Reader returned ${response.status}`);
   }
@@ -92,9 +98,7 @@ async function extractWithJina(url: string): Promise<ExtractedArticle> {
  * Extract using Mozilla Readability
  * Classic fallback that works well for most sites
  */
-async function extractWithReadability(
-  url: string
-): Promise<ExtractedArticle> {
+async function extractWithReadability(url: string): Promise<ExtractedArticle> {
   const response = await fetch(url, {
     headers: {
       'User-Agent':
@@ -108,7 +112,7 @@ async function extractWithReadability(
   }
 
   const html = await response.text();
-  
+
   // Use linkedom instead of jsdom - lighter and works better with Next.js
   const { parseHTML } = await import('linkedom');
   const { document } = parseHTML(html);
@@ -170,4 +174,3 @@ export function isLikelyArticleUrl(url: string): boolean {
     return false;
   }
 }
-
